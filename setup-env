@@ -1,0 +1,48 @@
+#! /bin/bash
+
+OEROOT="`pwd`"
+OE_CORE_SCRIPTS="`pwd`/layers/openembedded-core/scripts"
+BITBAKE_SCRIPTS="`pwd`/bitbake/bin"
+
+# Change PATH to make things more convenient.
+export PATH="${OE_CORE_SCRIPTS}:${BITBAKE_SCRIPTS}:${PATH}"
+
+# Allow to build for different MACHINE directly.
+# This is mostly due to OpenXT using MACHINE like "images". That could/should
+# be fixed somewhere down the line.
+export BB_ENV_EXTRAWHITE="MACHINE DISTRO"
+
+MANIFEST="${OEROOT}/.repo/manifests"
+
+# Deploy configuration for bitbake/OE
+mkdir -p conf
+ln -sf "${MANIFEST}/conf/local.conf" conf/local.conf
+ln -sf "${MANIFEST}/conf/bblayers.conf" conf/bblayers.conf
+
+# Default MACHINE.
+__DEFAULT_MACHINE="xenclient-dom0"
+__DEFAULT_DISTRO="openxt-main"
+cat > conf/auto.conf <<EOF
+MACHINE ?= "${__DEFAULT_MACHINE}"
+DISTRO ?= "${__DEFAULT_DISTRO}"
+EOF
+
+# Config depending on host build machine.
+if [ ! -e conf/site.conf ]; then
+    cat > conf/site.conf <<_EOF
+SCONF_VERSION = "1"
+
+# Where to store sources
+DL_DIR = "${OEROOT}/downloads"
+
+# Where to save shared state
+SSTATE_DIR = "${OEROOT}/sstate-cache"
+
+# Which files do we want to parse:
+BBFILES ?= "${OEROOT}/layers/openembedded-core/meta/recipes-*/*/*.bb"
+
+TMPDIR ?= "${OEROOT}/build"
+
+_EOF
+fi
+
