@@ -11,5 +11,7 @@
   <project remote="github" name="openembedded/openembedded-core" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" path="layers/meta-openembedded"/>
 
+  <copyfile dest="setup-env" src=".repo/manifests/setup-environment"/>
+
 </manifest>
 
