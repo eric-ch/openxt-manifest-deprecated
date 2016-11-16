@@ -13,6 +13,7 @@
 
   <project remote="yocto" name="meta-intel" path="layers/meta-intel"/>
   <project remote="yocto" name="meta-java" path="layers/meta-java"/>
+  <project remote="yocto" name="meta-selinux" path="layers/meta-selinux"/>
 
   <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe">
       <copyfile dest="setup-env" src="../../.repo/manifests/setup-env"/>
