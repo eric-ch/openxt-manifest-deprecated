@@ -5,7 +5,7 @@ OE_CORE_SCRIPTS="`pwd`/layers/openembedded-core/scripts"
 BITBAKE_SCRIPTS="`pwd`/bitbake/bin"
 
 # Change PATH to make things more convenient.
-export PATH="${OE_CORE_SCRIPTS}:${BITBAKE_SCRIPTS}:${PATH}"
+export PATH="${OE_CORE_SCRIPTS}":"${BITBAKE_SCRIPTS}":"${PATH}"
 
 # Allow to build for different MACHINE directly.
 # This is mostly due to OpenXT using MACHINE like "images". That could/should
