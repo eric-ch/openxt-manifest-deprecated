@@ -7,7 +7,7 @@
   <remote fetch="git://git.openembedded.org" name="oe"/>
   <remote fetch="https://github.com" name="github"/>
 
-  <project remote="github" name="openembedded/bitbake" path="bitbake"/>
+  <project remote="github" name="openembedded/bitbake" revision="1.32" path="bitbake"/>
   <project remote="github" name="openembedded/openembedded-core" revision="morty" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="morty" path="layers/meta-openembedded"/>
 
