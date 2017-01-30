@@ -1,0 +1,24 @@
+Avoid PRServ crash due to exception "cannot start a transaction within a
+transaction". This ends up having one bitbake thread hang waiting for something
+to happend on a socket (rpc, likely), while other threads are blocked on futex.
+The main thread will then endlessly report:
+Delaying shutdown due to active processes which appear to be holding bitbake.lock:
+b'                     USER        PID ACCESS COMMAND\n/home/build/openxt/morty/bitbake.lock:\n                     build     21746 F.... PRServ\n'
+
+This could very well be an instance of:
+http://stackoverflow.com/questions/15856976/transactions-with-python-sqlite3
+... from which this work-around comes from.
+
+diff --git a/lib/prserv/db.py b/lib/prserv/db.py
+index 495d09f..8910268 100644
+--- a/lib/prserv/db.py
++++ b/lib/prserv/db.py
+@@ -250,7 +250,7 @@ class PRData(object):
+         except OSError as e:
+             if e.errno != errno.EEXIST:
+                 raise e
+-        self.connection=sqlite3.connect(self.filename, isolation_level="EXCLUSIVE", check_same_thread = False)
++        self.connection=sqlite3.connect(self.filename, isolation_level = None, check_same_thread = False)
+         self.connection.row_factory=sqlite3.Row
+         self.connection.execute("pragma synchronous = off;")
+         self.connection.execute("PRAGMA journal_mode = WAL;")
