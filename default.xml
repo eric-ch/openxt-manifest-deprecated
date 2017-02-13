@@ -7,17 +7,12 @@
   <remote fetch="git://git.openembedded.org" name="oe"/>
   <remote fetch="https://github.com" name="github"/>
 
-  <project remote="github" name="openembedded/bitbake" revision="1.32" path="bitbake"/>
+  <project remote="github" name="openembedded/bitbake" revision="1.32" path="bitbake">
+      <copyfile dest="setup-env" src="../.repo/manifests/setup-env"/>
+  </project>
   <project remote="github" name="openembedded/openembedded-core" revision="morty" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="morty" path="layers/meta-openembedded"/>
-
-  <project remote="yocto" name="meta-intel" revision="morty" path="layers/meta-intel"/>
-  <project remote="yocto" name="meta-java" path="layers/meta-java"/>
-  <project remote="yocto" name="meta-selinux" path="layers/meta-selinux"/>
-
-  <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe">
-      <copyfile dest="setup-env" src="../../.repo/manifests/setup-env"/>
-  </project>
+  <project remote="github" name="eric-ch/meta-haskell" revision="master" path="layers/meta-haskell"/>
 
 </manifest>
 

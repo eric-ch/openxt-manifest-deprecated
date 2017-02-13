@@ -20,8 +20,8 @@ ln -sf "${MANIFEST}/conf/local.conf" conf/local.conf
 ln -sf "${MANIFEST}/conf/bblayers.conf" conf/bblayers.conf
 
 # Default MACHINE.
-__DEFAULT_MACHINE="xenclient-dom0"
-__DEFAULT_DISTRO="openxt-main"
+__DEFAULT_MACHINE="qemux86"
+__DEFAULT_DISTRO=""
 cat > conf/auto.conf <<EOF
 MACHINE ?= "${__DEFAULT_MACHINE}"
 DISTRO ?= "${__DEFAULT_DISTRO}"
