@@ -40,9 +40,6 @@ SSTATE_DIR = "${OEROOT}/sstate-cache"
 
 # Which files do we want to parse:
 BBFILES ?= "${OEROOT}/layers/openembedded-core/meta/recipes-*/*/*.bb"
-
-TMPDIR ?= "${OEROOT}/build"
-
 _EOF
 fi
 
