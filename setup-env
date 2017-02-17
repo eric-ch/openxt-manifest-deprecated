@@ -43,3 +43,5 @@ BBFILES ?= "${OEROOT}/layers/openembedded-core/meta/recipes-*/*/*.bb"
 _EOF
 fi
 
+# Link to the scripts for convenience.
+ln -sf .repo/manifests/scripts scripts
