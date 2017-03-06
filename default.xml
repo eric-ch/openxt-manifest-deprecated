@@ -7,17 +7,17 @@
   <remote fetch="git://git.openembedded.org" name="oe"/>
   <remote fetch="https://github.com" name="github"/>
 
-  <project remote="github" name="openembedded/bitbake" revision="1.32" path="bitbake"/>
-  <project remote="github" name="openembedded/openembedded-core" revision="morty" path="layers/openembedded-core"/>
-  <project remote="github" name="openembedded/meta-openembedded" revision="morty" path="layers/meta-openembedded"/>
-
-  <project remote="yocto" name="meta-intel" revision="morty" path="layers/meta-intel"/>
-  <project remote="yocto" name="meta-java" path="layers/meta-java"/>
-  <project remote="yocto" name="meta-selinux" path="layers/meta-selinux"/>
-
-  <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe">
-      <copyfile dest="setup-env" src="../../.repo/manifests/setup-env"/>
+  <project remote="github" name="openembedded/bitbake" revision="1.28" path="bitbake">
+      <copyfile dest="setup-env" src="../.repo/manifests/setup-env"/>
   </project>
+  <project remote="github" name="openembedded/openembedded-core" revision="jethro" path="layers/openembedded-core"/>
+  <project remote="github" name="openembedded/meta-openembedded" revision="jethro" path="layers/meta-openembedded"/>
+
+  <project remote="yocto" name="meta-intel" revision="jethro" path="layers/meta-intel"/>
+  <project remote="yocto" name="meta-java" revision="a73939323984fca1e919d3408d3301ccdbceac9c" path="layers/meta-java"/>
+  <project remote="yocto" name="meta-selinux" revision="jethro" path="layers/meta-selinux"/>
+
+  <project remote="github" name="openxt/xenclient-oe" revision="master" path="layers/xenclient-oe"/>
 
 </manifest>
 
