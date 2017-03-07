@@ -18,6 +18,8 @@
   <project remote="yocto" name="meta-selinux" revision="jethro" path="layers/meta-selinux"/>
 
   <project remote="github" name="openxt/xenclient-oe" revision="master" path="layers/xenclient-oe"/>
+  <project remote="github" name="openxt/meta-openxt-ocaml-platform" revision="master" path="layers/meta-openxt-ocaml-platform"/>
+  <project remote="github" name="openxt/meta-openxt-haskell-platform" revision="master" path="layers/meta-openxt-haskell-platform"/>
 
 </manifest>
 
