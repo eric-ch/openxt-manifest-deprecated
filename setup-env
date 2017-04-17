@@ -42,4 +42,8 @@ BBFILES ?= "${OEROOT}/layers/openembedded-core/meta/recipes-*/*/*.bb"
 
 # OpenXT: Where To get the signing certificates.
 OPENXT_CERTS_DIR ?= "${OEROOT}/oxt-certs"
+
+# OpenXT: Use local mirrors.
+OPENXT_GIT_MIRROR ?= "${OEROOT}/mirrors"
+OPENXT_GIT_PROTOCOL ?= "file"
 _EOF
