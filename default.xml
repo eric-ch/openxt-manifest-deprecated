@@ -22,34 +22,36 @@
   <project remote="github" name="openxt/meta-openxt-ocaml-platform" revision="master" path="layers/meta-openxt-ocaml-platform"/>
   <project remote="github" name="openxt/meta-openxt-haskell-platform" revision="master" path="layers/meta-openxt-haskell-platform"/>
 
-  <project remote="github" name="openxt/dm-agent" path="mirrors/dm-agent"/>
-  <project remote="github" name="openxt/fbtap" path="mirrors/fbtap"/>
-  <project remote="github" name="openxt/gene3fs" path="mirrors/gene3fs"/>
-  <project remote="github" name="openxt/icbinn" path="mirrors/icbinn"/>
-  <project remote="github" name="openxt/idl" path="mirrors/idl"/>
-  <project remote="github" name="openxt/input" path="mirrors/input"/>
-  <project remote="github" name="openxt/installer" path="mirrors/installer"/>
-  <project remote="github" name="openxt/libedid" path="mirrors/libedid"/>
-  <project remote="github" name="openxt/libxcdbus" path="mirrors/libxcdbus"/>
-  <project remote="github" name="openxt/libxenbackend" path="mirrors/libxenbackend"/>
-  <project remote="github" name="openxt/manager" path="mirrors/manager"/>
-  <project remote="github" name="openxt/network" path="mirrors/network"/>
-  <project remote="github" name="openxt/ocaml" path="mirrors/ocaml"/>
-  <project remote="github" name="openxt/pv-linux-drivers" path="mirrors/pv-linux-drivers"/>
-  <project remote="github" name="openxt/resized" path="mirrors/resized"/>
-  <project remote="github" name="openxt/sync-client" path="mirrors/sync-client"/>
-  <project remote="github" name="openxt/sync-wui" path="mirrors/sync-wui"/>
-  <project remote="github" name="openxt/surfman" path="mirrors/surfman"/>
-  <project remote="github" name="openxt/toolstack" path="mirrors/toolstack"/>
-  <project remote="github" name="openxt/toolstack-data" path="mirrors/toolstack-data"/>
-  <project remote="github" name="openxt/uid" path="mirrors/uid"/>
-  <project remote="github" name="openxt/v4v" path="mirrors/v4v"/>
-  <project remote="github" name="openxt/vusb-daemon" path="mirrors/vusb-daemon"/>
-  <project remote="github" name="openxt/xblanker" path="mirrors/xblanker"/>
-  <project remote="github" name="openxt/xclibs" path="mirrors/xclibs"/>
-  <project remote="github" name="openxt/xctools" path="mirrors/xctools"/>
-  <project remote="github" name="openxt/xenfb2" path="mirrors/xenfb2"/>
-  <project remote="github" name="openxt/xsm-policy" path="mirrors/xsm-policy"/>
+  <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
+  <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
+  <project remote="github" name="openxt/gene3fs" path="openxt/gene3fs"/>
+  <project remote="github" name="openxt/icbinn" path="openxt/icbinn"/>
+  <project remote="github" name="openxt/idl" path="openxt/idl"/>
+  <project remote="github" name="openxt/input" path="openxt/input"/>
+  <project remote="github" name="openxt/installer" path="openxt/installer"/>
+  <project remote="github" name="openxt/libedid" path="openxt/libedid"/>
+  <project remote="github" name="openxt/libxcdbus" path="openxt/libxcdbus"/>
+  <project remote="github" name="openxt/libxenbackend" path="openxt/libxenbackend"/>
+  <project remote="github" name="openxt/manager" path="openxt/manager"/>
+  <project remote="github" name="openxt/network" path="openxt/network"/>
+  <project remote="github" name="openxt/ocaml" path="openxt/ocaml"/>
+  <project remote="github" name="openxt/pv-linux-drivers" path="openxt/pv-linux-drivers"/>
+  <project remote="github" name="openxt/resized" path="openxt/resized"/>
+  <project remote="github" name="openxt/sync-client" path="openxt/sync-client"/>
+  <project remote="github" name="openxt/sync-wui" path="openxt/sync-wui"/>
+  <project remote="github" name="openxt/surfman" path="openxt/surfman"/>
+  <project remote="github" name="openxt/toolstack" path="openxt/toolstack"/>
+  <project remote="github" name="openxt/toolstack-data" path="openxt/toolstack-data"/>
+  <project remote="github" name="openxt/uid" path="openxt/uid"/>
+  <project remote="github" name="openxt/v4v" path="openxt/v4v"/>
+  <project remote="github" name="openxt/vusb-daemon" path="openxt/vusb-daemon"/>
+  <project remote="github" name="openxt/xblanker" path="openxt/xblanker"/>
+  <project remote="github" name="openxt/xclibs" path="openxt/xclibs"/>
+  <project remote="github" name="openxt/xctools" path="openxt/xctools"/>
+  <project remote="github" name="openxt/xenfb2" path="openxt/xenfb2"/>
+  <project remote="github" name="openxt/xsm-policy" path="openxt/xsm-policy">
+      <linkfile dest="mirrors" src="../../.repo/projects/openxt/"/>
+  </project>
 
 </manifest>
 

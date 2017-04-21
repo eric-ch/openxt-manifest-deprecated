@@ -46,4 +46,7 @@ OPENXT_CERTS_DIR ?= "${OEROOT}/oxt-certs"
 # OpenXT: Use local mirrors.
 OPENXT_GIT_MIRROR ?= "${OEROOT}/mirrors"
 OPENXT_GIT_PROTOCOL ?= "file"
+OPENXT_BRANCH ?= "master"
+OPENXT_TAG ?= "master"
+OPENXT_MIRROR ?= "http://mirror.openxt.org/"
 _EOF
