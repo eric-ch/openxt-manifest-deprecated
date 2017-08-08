@@ -9,6 +9,7 @@
 
   <project remote="github" name="openembedded/bitbake" revision="1.28" path="bitbake">
       <copyfile dest="setup-env" src="../.repo/manifests/setup-env"/>
+      <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="jethro" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="jethro" path="layers/meta-openembedded"/>
