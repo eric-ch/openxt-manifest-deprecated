@@ -21,7 +21,7 @@
 
   <project remote="github" name="eric-ch/xenclient-oe" revision="oe-upgrade-pyro" path="layers/xenclient-oe"/>
   <project remote="github" name="openxt/meta-openxt-ocaml-platform" revision="master" path="layers/meta-openxt-ocaml-platform"/>
-  <project remote="github" name="eric-ch/meta-haskell" revision="master" path="layers/meta-openxt-haskell-platform"/>
+  <project remote="github" name="eric-ch/meta-openxt-haskell-platform" revision="haskell-refactor" path="layers/meta-openxt-haskell-platform"/>
 
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
   <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
