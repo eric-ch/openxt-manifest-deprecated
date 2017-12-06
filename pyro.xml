@@ -20,18 +20,18 @@
   <project remote="yocto" name="meta-virtualization" revision="pyro" path="layers/meta-virtualization"/>
 
   <project remote="github" name="eric-ch/xenclient-oe" revision="oe-upgrade-pyro" path="layers/xenclient-oe"/>
-  <project remote="github" name="openxt/meta-openxt-ocaml-platform" revision="master" path="layers/meta-openxt-ocaml-platform"/>
-  <project remote="github" name="eric-ch/meta-openxt-haskell-platform" revision="haskell-refactor" path="layers/meta-openxt-haskell-platform"/>
+  <project remote="github" name="eric-ch/meta-openxt-ocaml-platform" revision="oe-upgrade-pyro" path="layers/meta-openxt-ocaml-platform"/>
+  <project remote="github" name="eric-ch/meta-openxt-haskell-platform" revision="oe-upgrade-pyro" path="layers/meta-openxt-haskell-platform"/>
 
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
   <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
   <project remote="github" name="openxt/gene3fs" path="openxt/gene3fs"/>
   <project remote="github" name="openxt/icbinn" path="openxt/icbinn"/>
   <project remote="github" name="openxt/idl" path="openxt/idl"/>
-  <project remote="github" name="openxt/input" path="openxt/input"/>
+  <project remote="github" name="eric-ch/input" revision="oe-upgrade-pyro" path="openxt/input"/>
   <project remote="github" name="openxt/installer" path="openxt/installer"/>
   <project remote="github" name="openxt/libedid" path="openxt/libedid"/>
-  <project remote="github" name="openxt/libxcdbus" path="openxt/libxcdbus"/>
+  <project remote="github" name="eric-ch/libxcdbus" revision="oe-upgrade-pyro" path="openxt/libxcdbus"/>
   <project remote="github" name="openxt/libxenbackend" path="openxt/libxenbackend"/>
   <project remote="github" name="openxt/manager" path="openxt/manager"/>
   <project remote="github" name="openxt/network" path="openxt/network"/>
@@ -45,7 +45,7 @@
   <project remote="github" name="openxt/toolstack-data" path="openxt/toolstack-data"/>
   <project remote="github" name="openxt/uid" path="openxt/uid"/>
   <project remote="github" name="openxt/v4v" path="openxt/v4v"/>
-  <project remote="github" name="openxt/vusb-daemon" path="openxt/vusb-daemon"/>
+  <project remote="github" name="eric-ch/vusb-daemon" revision="oe-upgrade-pyro" path="openxt/vusb-daemon"/>
   <project remote="github" name="openxt/xblanker" path="openxt/xblanker"/>
   <project remote="github" name="openxt/xclibs" path="openxt/xclibs"/>
   <project remote="github" name="openxt/xctools" path="openxt/xctools"/>
