@@ -8,8 +8,6 @@ BITBAKE_SCRIPTS="`pwd`/bitbake/bin"
 export PATH="${OE_CORE_SCRIPTS}":"${BITBAKE_SCRIPTS}":"${PATH}"
 
 # Allow to build for different MACHINE directly.
-# This is mostly due to OpenXT using MACHINE like "images". That could/should
-# be fixed somewhere down the line.
 export BB_ENV_EXTRAWHITE="MACHINE DISTRO"
 
 MANIFEST=".repo/manifests"
