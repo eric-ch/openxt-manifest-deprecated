@@ -28,7 +28,7 @@
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
   <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
   <project remote="github" name="openxt/gene3fs" path="openxt/gene3fs"/>
-  <project remote="github" name="openxt/icbinn" path="openxt/icbinn"/>
+  <project remote="github" name="eric-ch/icbinn" revision="oe-upgrade-pyro" path="openxt/icbinn"/>
   <project remote="github" name="openxt/idl" path="openxt/idl"/>
   <project remote="github" name="eric-ch/input" revision="oe-upgrade-pyro" path="openxt/input"/>
   <project remote="github" name="openxt/installer" path="openxt/installer"/>
@@ -50,7 +50,7 @@
   <project remote="github" name="eric-ch/vusb-daemon" revision="oe-upgrade-pyro" path="openxt/vusb-daemon"/>
   <project remote="github" name="openxt/xblanker" path="openxt/xblanker"/>
   <project remote="github" name="openxt/xclibs" path="openxt/xclibs"/>
-  <project remote="github" name="openxt/xctools" path="openxt/xctools"/>
+  <project remote="github" name="eric-ch/xctools" revision="oe-upgrade-pyro" path="openxt/xctools"/>
   <project remote="github" name="openxt/xenfb2" path="openxt/xenfb2"/>
   <project remote="github" name="openxt/xsm-policy" path="openxt/xsm-policy">
       <linkfile dest="mirrors" src="../../.repo/projects/openxt/"/>
