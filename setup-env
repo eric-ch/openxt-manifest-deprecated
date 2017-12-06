@@ -12,11 +12,6 @@ export BB_ENV_EXTRAWHITE="MACHINE DISTRO"
 
 MANIFEST=".repo/manifests"
 
-# Deploy configuration for bitbake/OE
-mkdir -p conf
-ln -sf "../${MANIFEST}/conf/local.conf" conf/local.conf
-ln -sf "../${MANIFEST}/conf/bblayers.conf" conf/bblayers.conf
-
 # Default MACHINE.
 __DEFAULT_MACHINE="xenclient-dom0"
 __DEFAULT_DISTRO="openxt-main"

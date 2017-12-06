@@ -10,6 +10,8 @@
   <project remote="github" name="openembedded/bitbake" revision="1.34" path="bitbake">
       <copyfile dest="setup-env" src="../.repo/manifests/setup-env"/>
       <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
+      <linkfile dest="conf/bblayers.conf" src="../.repo/manifests/pyro-conf/bblayers.conf"/>
+      <linkfile dest="conf/local.conf" src="../.repo/manifests/pyro-conf/local.conf"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="pyro" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="pyro" path="layers/meta-openembedded"/>
