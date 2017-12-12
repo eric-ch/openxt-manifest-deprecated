@@ -40,6 +40,60 @@ openxt_images=(
     xenclient-syncvm:xenclient-syncvm-image
 )
 
+# Usage: certs [path]
+# Create self-signed certificates in ./certs or create a link from [path] to
+# ./certs to point to existing certificates.
+# Expected existing PEM X.509 certificates are:
+# - prod-cacert.pem
+# - dev-cacert.pem
+certs() {
+    local path=$1
+
+    if [ $# -eq 0 ]; then
+        mkdir -p oxt-certs &&
+        openssl genrsa -out oxt-certs/prod-cakey.pem 2048 &&
+        openssl genrsa -out oxt-certs/dev-cakey.pem 2048 &&
+        openssl req -new -x509 -key oxt-certs/prod-cakey.pem -out oxt-certs/prod-cacert.pem -days 1095 &&
+        openssl req -new -x509 -key oxt-certs/dev-cakey.pem -out oxt-certs/dev-cacert.pem -days 1095 ||
+            return 1
+    else
+        # Certificates are already setup for this tree.
+        if [ -L "./oxt-certs" ]; then
+            cat - >&2 <<EOF
+Certificates are already linked to: `pwd`/oxt-certs.
+If they are no longer required, remove the symlink to ./oxt-certs before running this script.
+Aborting.
+EOF
+           return 1 
+        fi
+        # Certificates have already be generated in this tree.
+        if [ -d "./oxt-certs" -a 
+             -f "./oxt-certs/prod-cacert.pem" -o 
+             -f "./oxt-certs/dev-cacert.pem" ]; then
+            cat - >&2 <<EOF
+Certificates already exist in: `pwd`/oxt-certs.
+If they are no longer required, remove the ./oxt-certs directory before running this script.
+Aborting.
+EOF
+            return 1
+        fi
+        # Point to the given certs.
+        if [ -d "$path" -a 
+             -f "$path/prod-cacert.pem" -o
+             -f "$path/dev-cacert.pem" ]; then
+            ln -sf "$path" ./oxt-certs
+        else
+            cat - >&2 <<EOF
+Missing expected certificates in in \`$path'.
+This script expects $path/{prod,dev}-cacert.pem X.509 certificates to be present.
+Aborting.
+EOF
+            return 1
+        fi
+    fi
+}
+
+
 # Usage: build
 # Build all the images of the OpenXT project using bitbake.
 build() {
@@ -144,12 +198,12 @@ deploy() {
 }
 
 # Sanitize input.
-for cmd in $@; do
-    case "$cmd" in
-        build)  build ;;
-        deploy) deploy;;
-        *)      echo "Unknown command \`${cmd}'." >&2
-                usage 1
-                ;;
-    esac
-done
+case "$1" in
+    build)  build ;;
+    deploy) deploy ;;
+    certs)  shift 1
+            certs $@ ;;
+    *)      echo "Unknown command \`${cmd}'." >&2
+            usage 1
+            ;;
+esac
