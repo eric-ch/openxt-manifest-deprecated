@@ -31,7 +31,7 @@
   <project remote="github" name="eric-ch/icbinn" revision="oe-upgrade-pyro" path="openxt/icbinn"/>
   <project remote="github" name="openxt/idl" path="openxt/idl"/>
   <project remote="github" name="openxt/input" path="openxt/input"/>
-  <project remote="github" name="openxt/installer" path="openxt/installer"/>
+  <project remote="github" name="eric-ch/installer" revision="oe-upgrade-pyro" path="openxt/installer"/>
   <project remote="github" name="openxt/libedid" path="openxt/libedid"/>
   <project remote="github" name="openxt/libxcdbus" path="openxt/libxcdbus"/>
   <project remote="github" name="openxt/libxenbackend" path="openxt/libxenbackend"/>
