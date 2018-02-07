@@ -366,22 +366,131 @@ deploy_iso() {
     fi
 }
 
+stage_usb() {
+    local machine="xenclient-dom0"
+    local syslinux_subdir="usb/syslinux"
+    # TODO: Well this is ugly.
+    local image_name="xenclient-installer-image-xenclient-dom0"
+
+    # --- Write syslinux configuration.
+    mkdir -p "${staging_dir}/${syslinux_subdir}"
+    cat - > "${staging_dir}/${syslinux_subdir}/syslinux.cfg" <<EOF
+SERIAL 0
+DEFAULT openxt
+DISPLAY bootmsg.txt
+PROMPT 1
+TIMEOUT 20
+LABEL openxt
+  kernel mboot.c32
+  append tboot.gz min_ram=0x2000000 loglvl=all serial=115200,8n1,0x3f8 logging=serial,memory --- xen.gz flask=disabled console=com1 dom0_max_vcpus=1 com1=115200,8n1,pci dom0_mem=max:8G ucode=-1 --- vmlinuz quiet root=/dev/ram rw start_install=new eject_cdrom=1 answerfile=/install/answers/default.ans console=hvc0 console=/dev/tty2 selinux=0 --- rootfs.gz --- gm45.acm --- q35.acm --- q45q43.acm --- duali.acm --- quadi.acm --- ivb_snb.acm --- xeon56.acm --- xeone7.acm --- hsw.acm --- bdw.acm --- skl.acm --- kbl.acm --- microcode_intel.bin
+EOF
+    cat - > "${staging_dir}/${syslinux_subdir}/bootmsg.txt" << EOF
+
+0fOpenXT $OPENXT_VERSION (Build $OPENXT_BUILD_ID)
+
+EOF
+    # --- Stage installer initrd.
+    local initrd_type="cpio.gz"
+    local initrd_src_path="${machine}/${image_name}.${initrd_type}"
+    local initrd_dst_name="rootfs.gz"
+    local initrd_dst_path="${syslinux_subdir}/${initrd_dst_name}"
+
+    stage_build_output "${initrd_src_path}" "${initrd_dst_path}"
+
+    # --- Stage kernel.
+    local kernel_type="bzImage"
+    local kernel_src_path="${machine}/${kernel_type}-${machine}.bin"
+    local kernel_dst_path="${syslinux_subdir}/vmlinuz"
+
+    stage_build_output "${kernel_src_path}" "${kernel_dst_path}"
+
+    # --- Stage hypervisor.
+    local hv_src_path="${machine}/xen.gz"
+    local hv_dst_path="${syslinux_subdir}/xen.gz"
+
+    stage_build_output "${hv_src_path}" "${hv_dst_path}"
+
+    # --- Stage tboot.
+    local tboot_src_path="${machine}/tboot.gz"
+    local tboot_dst_path="${syslinux_subdir}/tboot.gz"
+
+    stage_build_output "${tboot_src_path}" "${tboot_dst_path}"
+
+    # --- Stage ACMs & license.
+    local acms_src_dir="${machine}/"
+    local acms_src_suffix=".acm"
+    local acms_dst_path="${syslinux_subdir}"
+
+    stage_build_output_by_suffix "${acms_src_dir}" "${acms_src_suffix}" "${acms_dst_path}"
+
+    local lic_src_path="${machine}/license-SINIT-ACMs.txt"
+    local lic_dst_path="${syslinux_subdir}/license-SINIT-ACMs.txt"
+
+    stage_build_output "${lic_src_path}" "${lic_dst_path}"
+
+    # --- Stage microcode.
+    local uc_src_path="${machine}/microcode_intel.bin"
+    local uc_dst_path="${syslinux_subdir}/microcode_intel.bin"
+
+    stage_build_output "${uc_src_path}" "${uc_dst_path}"
+}
+
 deploy_usb() {
     local sd="$1"
+    local reply=""
+    local attempts=5
 
     if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
         return 1
     fi
 
+    # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
+    # meta files.
+    stage_repository
+    # Prepare USB image layout.
+    stage_usb
+
     echo -n "This will erase ${sd}, are you sure? (y/N)"
+    while [ "${reply}" != "y" ]; do
+        read reply
+        case "${reply}" in
+            ""|"n"|"N") return 0 ;;
+        esac
+        if [ "${attempts}" -lt 0 ]; then
+            echo "" >&2
+            echo "Assuming \`no\'... Bailing out." >&2
+            return 1
+        fi
+    done
+
+    local host_syslinux_dir="/usr/lib/syslinux/bios"
+    local temp_mnt=`mktemp -d`
+    sudo mkfs.ext4 "${sd}"
+    sudo syslinux -i "${sd}"
+    sudo dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/mbr.bin" of="${sd%%[0-9]*}"
+    sudo mount "${sd}" "${temp_mnt}"
+    for bin in mboot.c32 ldlinux.c32 libcom.c32 ; do
+        cp -v "${host_syslinux_dir}/${bin}" "${temp_mnt}/syslinux"
+    done
+
+    cp -v "${staging_dir}/usb/*" "${temp_mnt}/"
+    cp -v "${staging_dir}/repository/*" "${temp_mnt}/"
+
+    # TODO: cp packages?
+
+    sudo umount "${temp_mnt}"
+    rm -r "${temp_mnt}"
 }
 
- # Usage: stage <command>
+# Usage: stage <command>
 # Stage commands wrapper.
 stage() {
-    case "$1" in
-        iso) stage_iso ;;
-        repository) stage_repository ;;
+    target="$1"
+    shift 1
+    case "${target}" in
+        "usb") stage_usb $@ ;;
+        "iso") stage_iso $@ ;;
+        "repository") stage_repository ;;
         *)  echo "Unknown staging command \`$1\'." >&2
             return 1
             ;;
@@ -391,18 +500,26 @@ stage() {
 # Usage: deploy <command>
 # Deploy OpenXT on the selected installation media.
 deploy() {
-    echo "Not implemented yet."
-    exit 0
+    target="$1"
+    shift 1
+    case "${target}" in
+        "usb") deploy_usb $@ ;;
+        "iso") deploy_iso $@ ;;
+        *) echo "Unknown staging command \`$1\'." >&2
+           return 1
+           ;;
+    esac
 }
 
 # Sanitize input.
-case "$1" in
-    build)  build ;;
-    deploy) deploy_iso ;;
-    stage) stage $2 ;;
-    certs)  shift 1
-            certs $@ ;;
-    *)      echo "Unknown command \`${cmd}'." >&2
-            usage 1
-            ;;
+command="$1"
+shift 1
+case "${command}" in
+    "build")  build ;;
+    "deploy") deploy $@ ;;
+    "stage") stage $@ ;;
+    "certs") certs $@ ;;
+    *) echo "Unknown command \`${cmd}'." >&2
+       usage 1
+       ;;
 esac
