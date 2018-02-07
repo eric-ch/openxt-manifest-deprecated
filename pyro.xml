@@ -35,7 +35,7 @@
   <project remote="github" name="openxt/libedid" path="openxt/libedid"/>
   <project remote="github" name="openxt/libxcdbus" path="openxt/libxcdbus"/>
   <project remote="github" name="openxt/libxenbackend" path="openxt/libxenbackend"/>
-  <project remote="github" name="openxt/manager" path="openxt/manager"/>
+  <project remote="github" name="eric-ch/manager" revision="oe-upgrade-pyro" path="openxt/manager"/>
   <project remote="github" name="openxt/network" path="openxt/network"/>
   <project remote="github" name="openxt/ocaml" path="openxt/ocaml"/>
   <project remote="github" name="openxt/pv-linux-drivers" path="openxt/pv-linux-drivers"/>
