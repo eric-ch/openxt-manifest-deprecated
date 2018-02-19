@@ -123,6 +123,24 @@ build() {
     done
 }
 
+# Usage: build
+# Re-build all the images of the OpenXT project using bitbake.
+rebuild() {
+    for e in ${openxt_images[@]}; do
+        local m="${e%%:*}"
+        local i="${e##*:}"
+
+        if ! MACHINE="$m" bitbake -c cleanall "$i" ; then
+            echo "MACHINE="$m" bitbake -c cleanall \"$i\" failed." >&2
+            break
+        fi
+        if ! MACHINE="$m" bitbake "$i" ; then
+            echo "MACHINE="$m" bitbake \"$i\" failed." >&2
+            break
+        fi
+    done
+}
+
 # Usage: stage_build_output source destination
 # Copy a build output from its deployed location (images_dir) to the staging
 # directory (staging_dir)
@@ -516,6 +534,7 @@ command="$1"
 shift 1
 case "${command}" in
     "build")  build ;;
+    "rebuild") rebuild ;;
     "deploy") deploy $@ ;;
     "stage") stage $@ ;;
     "certs") certs $@ ;;
