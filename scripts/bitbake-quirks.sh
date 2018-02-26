@@ -11,7 +11,7 @@ BITBAKE_PATH=${BITBAKE_PATH:-${__DEFAULT_BITBAKE_PATH}}
 SQLITE3_VERSION=`python -c "import sqlite3; print(sqlite3.sqlite_version)"`
 SQLITE3_VMAJOR=${SQLITE3_VERSION%%.*}
 __SQLITE3_VMINOR=${SQLITE3_VERSION#*.}
-SQLITE3_VMINOR=${__SQLITE3_VMINOR%.*}
+SQLITE3_VMINOR=${__SQLITE3_VMINOR%%.*}
 
 # This quirks was not required on a Debian jessie i386 environment that deploys
 # sqlite 3.8.7. So lets assume it is a `regression' introduced later, or
