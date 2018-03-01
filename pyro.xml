@@ -42,7 +42,7 @@
   <project remote="github" name="openxt/resized" path="openxt/resized"/>
   <project remote="github" name="openxt/sync-client" path="openxt/sync-client"/>
   <project remote="github" name="openxt/sync-wui" path="openxt/sync-wui"/>
-  <project remote="github" name="openxt/surfman" path="openxt/surfman"/>
+  <project remote="github" name="eric-ch/surfman" path="openxt/surfman"/>
   <project remote="github" name="openxt/toolstack" path="openxt/toolstack"/>
   <project remote="github" name="openxt/toolstack-data" path="openxt/toolstack-data"/>
   <project remote="github" name="openxt/uid" path="openxt/uid"/>
