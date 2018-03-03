@@ -1,6 +1,7 @@
 #! /bin/bash
 
 # Default paths configuration.
+conf_dir=${conf_dir:-./conf}
 deploy_dir=${deploy_dir:-./deploy}
 staging_dir=${staging_dir:-./staging}
 tclibc=${tclibc:-glibc}
@@ -248,17 +249,8 @@ stage_repository_entry() {
 # Copy images from the deployment directory (deploy_dir) to the repository
 # staging area (repository_dir) then use the generated metadata to sign the
 # repository.
-# TODO: manifest is currently hardcoded, it should be configurable.
+# Uses the manifest file in conf_dir to prepare the images.
 stage_repository() {
-    # Basic manifest.
-    cat > /tmp/manifest <<EOF
-xenclient-dom0 control xenclient-installer-part2-image tar.bz2 control /
-xenclient-dom0 dom0 xenclient-dom0-image ext3.gz dom0-rootfs /
-xenclient-uivm uivm xenclient-uivm-image ext3.vhd.gz uivm-rootfs /storage/uivm
-xenclient-ndvm ndvm xenclient-ndvm-image ext3.vhd.gz ndvm-rootfs /storage/ndvm
-xenclient-syncvm syncvm xenclient-syncvm-image ext3.vhd.gz syncvm-rootfs /storage/syncvm
-EOF
-
     while read l; do
         # Quick parsing/formating.
         entry=(${l})
@@ -273,8 +265,7 @@ EOF
         img_dst_name="${img_dst_label}.${img_type}"
 
         stage_repository_entry "${machine}" "${img_id}" "${img_src_name}" "${img_dst_name}" "${img_dst_mnt}"
-    done < /tmp/manifest
-    rm -f /tmp/manifest
+    done < ${conf_dir}/manifest
 
     sign_repository
 }

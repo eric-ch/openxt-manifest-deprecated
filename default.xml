@@ -12,6 +12,7 @@
       <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
       <linkfile dest="conf/bblayers.conf" src="../.repo/manifests/conf/bblayers.conf"/>
       <linkfile dest="conf/local.conf" src="../.repo/manifests/conf/local.conf"/>
+      <linkfile dest="conf/manifest" src="../.repo/manifests/conf/manifest"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="jethro" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="jethro" path="layers/meta-openembedded"/>
@@ -52,6 +53,7 @@
   <project remote="github" name="openxt/xclibs" path="openxt/xclibs"/>
   <project remote="github" name="openxt/xctools" path="openxt/xctools"/>
   <project remote="github" name="openxt/xenfb2" path="openxt/xenfb2"/>
+  <project remote="github" name="openxt/blktap3" path="openxt/blktap3"/>
   <project remote="github" name="openxt/xsm-policy" path="openxt/xsm-policy">
       <linkfile dest="mirrors" src="../../.repo/projects/openxt/"/>
   </project>

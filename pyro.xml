@@ -12,6 +12,7 @@
       <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
       <linkfile dest="conf/bblayers.conf" src="../.repo/manifests/pyro-conf/bblayers.conf"/>
       <linkfile dest="conf/local.conf" src="../.repo/manifests/pyro-conf/local.conf"/>
+      <linkfile dest="conf/manifest" src="../.repo/manifests/pyro-conf/manifest"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="pyro" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="pyro" path="layers/meta-openembedded"/>
