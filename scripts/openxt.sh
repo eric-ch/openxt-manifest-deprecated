@@ -82,8 +82,8 @@ EOF
            return 1
         fi
         # Certificates have already be generated in this tree.
-        if [ -d "${certs_dir}" -a
-             -f "${certs_dir}/prod-cacert.pem" -o
+        if [ -d "${certs_dir}" -a \
+             -f "${certs_dir}/prod-cacert.pem" -o \
              -f "${certs_dir}/dev-cacert.pem" ]; then
             cat - >&2 <<EOF
 Certificates already exist in: ${certs_dir}.
@@ -93,8 +93,8 @@ EOF
             return 1
         fi
         # Point to the given certs.
-        if [ -d "${path}" -a
-             -f "${path}/prod-cacert.pem" -o
+        if [ -d "${path}" -a \
+             -f "${path}/prod-cacert.pem" -o \
              -f "${path}/dev-cacert.pem" ]; then
             ln -sf "${path}" ${certs_dir}
         else
