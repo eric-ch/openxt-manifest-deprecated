@@ -384,6 +384,9 @@ deploy_iso() {
     fi
 }
 
+# Usage: stage_usb
+# Copy images from the deployment directory (deploy_dir) to the usb staging
+# area (staging_dir) that are specific to USB image generation.
 stage_usb() {
     local machine="xenclient-dom0"
     local syslinux_subdir="usb/syslinux"
@@ -453,6 +456,10 @@ EOF
     stage_build_output "${uc_src_path}" "${uc_dst_path}"
 }
 
+# Usage: deploy_usb </dev/sdXN>
+# Run the required staging steps, format the /dev/sdXN partition, install the
+# syslinux mbr on the device (/dev/sdX), install syslinux on it, then deploy
+# the installer and installation required files on the newly created partition.
 deploy_usb() {
     local sd="$1"
     local reply=""
@@ -496,6 +503,26 @@ deploy_usb() {
 
     # TODO: cp packages?
 
+    sudo umount "${temp_mnt}"
+    rm -r "${temp_mnt}"
+}
+
+# Usage: deploy_sync_usb </dev/sdXN>.
+# Copy the staged file in the USB installer partition.
+# This does no install the syslinux mbr or the syslinux bootloader files.
+deploy_sync_usb() {
+    local sd="$1"
+    local temp_mnt=`mktemp -d`
+
+    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
+        return 1
+    fi
+
+    sudo mount "${sd}" "${temp_mnt}"
+    # Copy the repositories
+    sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
+    # Copy the acms, installer hypervisor, kernel and initrd.
+    sudo cp -ruv "${staging_dir}/usb/syslinux/*" "${mnt}/syslinux"
     sudo umount "${temp_mnt}"
     rm -r "${temp_mnt}"
 }
