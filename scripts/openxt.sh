@@ -489,42 +489,33 @@ deploy_usb() {
     done
 
     local host_syslinux_dir="/usr/lib/syslinux/bios"
-    local temp_mnt=`mktemp -d`
-    sudo mkfs.ext4 "${sd}"
-    sudo syslinux -i "${sd}"
+    local mnt=`mktemp -d`
+
+    # Format media.
+    sudo mkfs.vfat "${sd}"
+
+    # Prepare media layout.
+    sudo mount "${sd}" "${mnt}"
+    sudo mkdir -p "${mnt}/syslinux"
+    sudo umount "${sd}"
+    # Install syslinux.
+    sudo syslinux -i "${sd}" -d "syslinux"
+    # ... with MBR.
     sudo dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/mbr.bin" of="${sd%%[0-9]*}"
-    sudo mount "${sd}" "${temp_mnt}"
-    for bin in mboot.c32 ldlinux.c32 libcom.c32 ; do
-        cp -v "${host_syslinux_dir}/${bin}" "${temp_mnt}/syslinux"
+    sudo parted "${sd%%[0-9]*}" set 1 boot on
+
+    # Deploy syslinux modules.
+    sudo mount "${sd}" "${mnt}"
+    for bin in mboot.c32 ldlinux.c32 libcom32.c32 ; do
+        sudo cp -v "${host_syslinux_dir}/${bin}" "${mnt}/syslinux"
     done
 
-    cp -v "${staging_dir}/usb/*" "${temp_mnt}/"
-    cp -v "${staging_dir}/repository/*" "${temp_mnt}/"
+    # Deploy installation files.
+    sudo cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
+    sudo cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
 
-    # TODO: cp packages?
-
-    sudo umount "${temp_mnt}"
-    rm -r "${temp_mnt}"
-}
-
-# Usage: deploy_sync_usb </dev/sdXN>.
-# Copy the staged file in the USB installer partition.
-# This does no install the syslinux mbr or the syslinux bootloader files.
-deploy_sync_usb() {
-    local sd="$1"
-    local temp_mnt=`mktemp -d`
-
-    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
-        return 1
-    fi
-
-    sudo mount "${sd}" "${temp_mnt}"
-    # Copy the repositories
-    sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
-    # Copy the acms, installer hypervisor, kernel and initrd.
-    sudo cp -ruv "${staging_dir}/usb/syslinux/*" "${mnt}/syslinux"
-    sudo umount "${temp_mnt}"
-    rm -r "${temp_mnt}"
+    sudo umount "${mnt}"
+    rm -r "${mnt}"
 }
 
 # Usage: stage <command>
@@ -556,6 +547,39 @@ deploy() {
     esac
 }
 
+# Usage: deploy_sync_usb </dev/sdXN>.
+# Copy the staged file in the USB installer partition.
+# This does no install the syslinux mbr or the syslinux bootloader files.
+sync_usb() {
+    local sd="$1"
+    local mnt=`mktemp -d`
+
+    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
+        return 1
+    fi
+
+    sudo mount "${sd}" "${mnt}"
+    # Copy the repositories
+    sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
+    # Copy the acms, installer hypervisor, kernel and initrd.
+    sudo cp -ruv -T "${staging_dir}/usb/syslinux" "${mnt}/syslinux"
+    sudo umount "${mnt}"
+    rm -r "${mnt}"
+}
+
+# Usage: sync <command> [args]
+# Synchronize install media with what is new in the staging.
+sync() {
+    target=$1
+    shift 1
+    case "${target}" in
+        "usb") sync_usb $@ ;;
+        *) echo "Unknown staging command \`$1\'." >&2
+           return 1
+           ;;
+    esac
+}
+
 # Sanitize input.
 command="$1"
 shift 1
@@ -565,6 +589,7 @@ case "${command}" in
     "deploy") deploy $@ ;;
     "stage") stage $@ ;;
     "certs") certs $@ ;;
+    "sync") sync $@ ;;
     *) echo "Unknown command \`${cmd}'." >&2
        usage 1
        ;;
