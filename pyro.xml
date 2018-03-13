@@ -53,6 +53,7 @@
   <project remote="github" name="openxt/xclibs" path="openxt/xclibs"/>
   <project remote="github" name="openxt/xctools" path="openxt/xctools"/>
   <project remote="github" name="openxt/xenfb2" path="openxt/xenfb2"/>
+  <project remote="github" name="openxt/blktap3" path="openxt/blktap3"/>
   <project remote="github" name="openxt/xsm-policy" path="openxt/xsm-policy">
       <linkfile dest="mirrors" src="../../.repo/projects/openxt/"/>
   </project>
