@@ -22,7 +22,7 @@
   <project remote="yocto" name="meta-selinux" revision="jethro" path="layers/meta-selinux"/>
   <project remote="yocto" name="meta-virtualization" revision="jethro" path="layers/meta-virtualization"/>
 
-  <project remote="github" name="openxt/xenclient-oe" revision="master" path="layers/xenclient-oe"/>
+  <project remote="github" name="eric-ch/xenclient-oe" revision="repo-build" path="layers/xenclient-oe"/>
   <project remote="github" name="openxt/meta-openxt-ocaml-platform" revision="master" path="layers/meta-openxt-ocaml-platform"/>
   <project remote="github" name="openxt/meta-openxt-haskell-platform" revision="master" path="layers/meta-openxt-haskell-platform"/>
 
