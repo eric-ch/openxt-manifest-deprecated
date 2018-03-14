@@ -549,6 +549,10 @@ sync_usb() {
         return 1
     fi
 
+    # Prepare repository & meta files.
+    stage_repository
+    # Prepare USB image layout.
+    stage_usb
     sudo mount "${sd}" "${mnt}"
     # Copy the repositories
     sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
