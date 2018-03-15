@@ -549,6 +549,8 @@ sync_usb() {
         return 1
     fi
 
+    set -e
+
     # Prepare repository & meta files.
     stage_repository
     # Prepare USB image layout.
@@ -559,6 +561,9 @@ sync_usb() {
     # Copy the acms, installer hypervisor, kernel and initrd.
     sudo cp -ruv -T "${staging_dir}/usb/syslinux" "${mnt}/syslinux"
     sudo umount "${mnt}"
+
+    set +e
+
     rm -r "${mnt}"
 }
 
