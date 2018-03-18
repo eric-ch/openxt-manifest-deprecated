@@ -47,7 +47,7 @@
   <project remote="github" name="openxt/toolstack" path="openxt/toolstack"/>
   <project remote="github" name="openxt/toolstack-data" path="openxt/toolstack-data"/>
   <project remote="github" name="openxt/uid" path="openxt/uid"/>
-  <project remote="github" name="openxt/v4v" path="openxt/v4v"/>
+  <project remote="github" name="eric-ch/v4v" revision="fomit-frame-pointer" path="openxt/v4v"/>
   <project remote="github" name="openxt/vusb-daemon" path="openxt/vusb-daemon"/>
   <project remote="github" name="openxt/xblanker" path="openxt/xblanker"/>
   <project remote="github" name="openxt/xclibs" path="openxt/xclibs"/>
