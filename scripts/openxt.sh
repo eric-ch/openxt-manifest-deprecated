@@ -47,8 +47,8 @@ shift $((${OPTIND} - 1))
 # List of MACHINE:image-recipe name for OpenXT
 openxt_images=(
     xenclient-dom0:xenclient-initramfs-image
-    xenclient-dom0:xenclient-installer-image
-    xenclient-dom0:xenclient-installer-part2-image
+    openxt-installer:xenclient-installer-image
+    openxt-installer:xenclient-installer-part2-image
     xenclient-stubdomain:xenclient-stubdomain-initramfs-image
     xenclient-dom0:xenclient-dom0-image
     xenclient-uivm:xenclient-uivm-image
@@ -274,10 +274,10 @@ stage_repository() {
 # Copy images from the deployment directory (deploy_dir) to the iso staging
 # area (staging_dir) that are specific to ISO image generation.
 stage_iso() {
-    local machine="xenclient-dom0"
+    local machine="openxt-installer"
     local isolinux_subdir="iso/isolinux"
     # TODO: Well this is ugly.
-    local image_name="xenclient-installer-image-xenclient-dom0"
+    local image_name="xenclient-installer-image-${machine}"
 
     # --- Stage installer bulk files.
     local iso_src_path="${machine}/${image_name}/iso"
@@ -339,11 +339,33 @@ stage_iso() {
     local uc_dst_path="${isolinux_subdir}/microcode_intel.bin"
 
     stage_build_output "${uc_src_path}" "${uc_dst_path}"
+
+    # --- Create the EFI boot partition in the staging area.
+
+    local efi_img="${staging_dir}/${isolinux_subdir}/efiboot.img"
+    local efi_path=$(mktemp -d)
+
+    echo ${efi_img}
+    rm -f ${efi_img}
+    mkdir -p "$(dirname "${efi_img}")"
+    dd if=/dev/zero bs=1M count=5 of="${efi_img}"
+    /sbin/mkfs -t fat "${efi_img}"
+    fusefat -o rw+ "${efi_img}" "${efi_path}"
+    mkdir -p "${efi_path}/EFI/BOOT"
+    cp "${images_dir}/${machine}/grubx64.efi" "${efi_path}/EFI/BOOT/BOOTX64.EFI"
+    fusermount -u "${efi_path}"
+    rm -rf "${efi_path}"
+
+    # --- Stage hybrid MBR image.
+    local isohdp_src="${machine}/isohdpfx.bin"
+    local isohdp_dst="${isolinux_subdir}/isohdpfx.bin"
+
+    stage_build_output "${isohdp_src}" "${isohdp_dst}"
 }
 
 # Usage: deploy_iso
 # Run the required staging steps and generate the ISO image.
-deploy_iso() {
+deploy_iso_old() {
     # TODO: This could be defined from configuration.
     local iso_name="openxt-installer.iso"
     local iso_path="${deploy_dir}/${iso_name}"
@@ -373,6 +395,42 @@ deploy_iso() {
         echo "isohybrid failed."
         return 1
     fi
+}
+
+# Usage: deploy_iso
+# Run the required staging steps and generate the ISO image.
+deploy_iso() {
+    # TODO: This could be defined from configuration.
+    local iso_name="openxt-installer.iso"
+    local iso_path="${deploy_dir}/${iso_name}"
+
+    # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
+    # meta files.
+    stage_repository
+    # Prepare ISO image layout.
+    # TODO: Amend syslinux files to reflect versions & such
+    stage_iso
+
+    xorriso -as mkisofs \
+        -o "${iso_path}" \
+        -isohybrid-mbr "${staging_dir}/iso/isolinux/isohdpfx.bin" \
+        -c "isolinux/boot.cat" \
+        -b "isolinux/isolinux.bin" \
+        -no-emul-boot \
+        -boot-load-size 4 \
+        -boot-info-table \
+        -eltorito-alt-boot \
+        -e "isolinux/efiboot.img" \
+        -no-emul-boot \
+        -isohybrid-gpt-basdat \
+        -r \
+        -J \
+        -l \
+        -V "OpenXT ${OPENXT_VERSION} installer." \
+        -f \
+        -quiet \
+        "${staging_dir}/iso" \
+        "${staging_dir}/repository"
 }
 
 # Usage: stage_usb
