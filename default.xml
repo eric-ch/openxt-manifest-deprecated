@@ -7,24 +7,24 @@
   <remote fetch="git://git.openembedded.org" name="oe"/>
   <remote fetch="https://github.com" name="github"/>
 
-  <project remote="github" name="openembedded/bitbake" revision="1.28" path="bitbake">
+  <project remote="github" name="openembedded/bitbake" revision="1.34" path="bitbake">
       <copyfile dest="setup-env" src="../.repo/manifests/setup-env"/>
       <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
       <linkfile dest="conf/bblayers.conf" src="../.repo/manifests/conf/bblayers.conf"/>
       <linkfile dest="conf/local.conf" src="../.repo/manifests/conf/local.conf"/>
       <linkfile dest="conf/manifest" src="../.repo/manifests/conf/manifest"/>
   </project>
-  <project remote="github" name="openembedded/openembedded-core" revision="jethro" path="layers/openembedded-core"/>
-  <project remote="github" name="openembedded/meta-openembedded" revision="jethro" path="layers/meta-openembedded"/>
+  <project remote="github" name="openembedded/openembedded-core" revision="pyro" path="layers/openembedded-core"/>
+  <project remote="github" name="openembedded/meta-openembedded" revision="pyro" path="layers/meta-openembedded"/>
 
-  <project remote="yocto" name="meta-intel" revision="jethro" path="layers/meta-intel"/>
-  <project remote="yocto" name="meta-java" revision="a73939323984fca1e919d3408d3301ccdbceac9c" path="layers/meta-java"/>
-  <project remote="yocto" name="meta-selinux" revision="jethro" path="layers/meta-selinux"/>
-  <project remote="yocto" name="meta-virtualization" revision="jethro" path="layers/meta-virtualization"/>
+  <project remote="yocto" name="meta-intel" revision="pyro" path="layers/meta-intel"/>
+  <project remote="yocto" name="meta-java" revision="pyro" path="layers/meta-java"/>
+  <project remote="yocto" name="meta-selinux" revision="master" path="layers/meta-selinux"/>
+  <project remote="yocto" name="meta-virtualization" revision="pyro" path="layers/meta-virtualization"/>
 
-  <project remote="github" name="eric-ch/xenclient-oe" revision="repo-build" path="layers/xenclient-oe"/>
-  <project remote="github" name="openxt/meta-openxt-ocaml-platform" revision="master" path="layers/meta-openxt-ocaml-platform"/>
-  <project remote="github" name="openxt/meta-openxt-haskell-platform" revision="master" path="layers/meta-openxt-haskell-platform"/>
+  <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe"/>
+  <project remote="github" name="openxt/meta-openxt-ocaml-platform" path="layers/meta-openxt-ocaml-platform"/>
+  <project remote="github" name="openxt/meta-openxt-haskell-platform" path="layers/meta-openxt-haskell-platform"/>
 
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
   <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
