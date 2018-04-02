@@ -345,7 +345,6 @@ stage_iso() {
     local efi_img="${staging_dir}/${isolinux_subdir}/efiboot.img"
     local efi_path=$(mktemp -d)
 
-    echo ${efi_img}
     rm -f ${efi_img}
     mkdir -p "$(dirname "${efi_img}")"
     dd if=/dev/zero bs=1M count=5 of="${efi_img}"
@@ -363,9 +362,9 @@ stage_iso() {
     stage_build_output "${isohdp_src}" "${isohdp_dst}"
 }
 
-# Usage: deploy_iso
+# Usage: deploy_iso_legacy
 # Run the required staging steps and generate the ISO image.
-deploy_iso_old() {
+deploy_iso_legacy() {
     # TODO: This could be defined from configuration.
     local iso_name="openxt-installer.iso"
     local iso_path="${deploy_dir}/${iso_name}"
@@ -433,10 +432,10 @@ deploy_iso() {
         "${staging_dir}/repository"
 }
 
-# Usage: stage_usb
+# Usage: stage_usb_legacy
 # Copy images from the deployment directory (deploy_dir) to the usb staging
 # area (staging_dir) that are specific to USB image generation.
-stage_usb() {
+stage_usb_legacy() {
     local machine="xenclient-dom0"
     local syslinux_subdir="usb/syslinux"
     # TODO: Well this is ugly.
@@ -505,11 +504,11 @@ EOF
     stage_build_output "${uc_src_path}" "${uc_dst_path}"
 }
 
-# Usage: deploy_usb </dev/sdXN>
+# Usage: deploy_usb_legacy </dev/sdXN>
 # Run the required staging steps, format the /dev/sdXN partition, install the
 # syslinux mbr on the device (/dev/sdX), install syslinux on it, then deploy
 # the installer and installation required files on the newly created partition.
-deploy_usb() {
+deploy_usb_legacy() {
     local sd="$1"
     local reply=""
     local attempts=5
@@ -522,7 +521,7 @@ deploy_usb() {
     # meta files.
     stage_repository
     # Prepare USB image layout.
-    stage_usb
+    stage_usb_legacy
 
     echo -n "This will erase ${sd}, are you sure? (y/N)"
     while [ "${reply}" != "y" ]; do
@@ -573,7 +572,8 @@ stage() {
     target="$1"
     shift 1
     case "${target}" in
-        "usb") stage_usb $@ ;;
+        "usb-old") stage_usb_legacy $@ ;;
+        "iso-old") stage_iso_legacy $@ ;;
         "iso") stage_iso $@ ;;
         "repository") stage_repository ;;
         *)  echo "Unknown staging command \`$1\'." >&2
@@ -588,7 +588,8 @@ deploy() {
     target="$1"
     shift 1
     case "${target}" in
-        "usb") deploy_usb $@ ;;
+        "usb-old") deploy_usb $@ ;;
+        "iso-old") deploy_iso_legacy $@ ;;
         "iso") deploy_iso $@ ;;
         *) echo "Unknown staging command \`$1\'." >&2
            return 1
@@ -596,10 +597,10 @@ deploy() {
     esac
 }
 
-# Usage: deploy_sync_usb </dev/sdXN>.
+# Usage: sync_usb_legacy </dev/sdXN>.
 # Copy the staged file in the USB installer partition.
 # This does no install the syslinux mbr or the syslinux bootloader files.
-sync_usb() {
+sync_usb_legacy() {
     local sd="$1"
     local mnt=`mktemp -d`
 
@@ -612,7 +613,7 @@ sync_usb() {
     # Prepare repository & meta files.
     stage_repository
     # Prepare USB image layout.
-    stage_usb
+    stage_usb_legacy
     sudo mount "${sd}" "${mnt}"
     # Copy the repositories
     sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
@@ -631,7 +632,7 @@ sync() {
     target=$1
     shift 1
     case "${target}" in
-        "usb") sync_usb $@ ;;
+        "usb-old") sync_usb_legacy $@ ;;
         *) echo "Unknown staging command \`$1\'." >&2
            return 1
            ;;
