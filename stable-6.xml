@@ -18,7 +18,7 @@
   <project remote="github" name="openembedded/meta-openembedded" revision="8ab04afbffb4bc5184cfe0655049de6f44269990" path="layers/meta-openembedded"/>
 
   <project remote="yocto" name="meta-java" revision="a73939323984fca1e919d3408d3301ccdbceac9c" path="layers/meta-java"/>
-  <project remote="yocto" name="meta-selinux" revision="" path="layers/meta-selinux"/>
+  <project remote="yocto" name="meta-selinux" revision="4c75d9cbcf1d75043c7c5ab315aa383d9b227510" path="layers/meta-selinux"/>
 
   <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe"/>
 
