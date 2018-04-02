@@ -23,6 +23,8 @@
   <project remote="yocto" name="meta-virtualization" revision="042425c1d98bdd7e44a62789bd03b375045266f5" path="layers/meta-virtualization"/>
 
   <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe"/>
+  <project remote="github" name="openxt/meta-openxt-ocaml-platform" path="layers/meta-openxt-ocaml-platform"/>
+  <project remote="github" name="openxt/meta-openxt-haskell-platform" path="layers/meta-openxt-haskell-platform"/>
 
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
   <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
