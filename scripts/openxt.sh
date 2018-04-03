@@ -44,18 +44,6 @@ while getopts ":h" opt; do
 done
 shift $((${OPTIND} - 1))
 
-# List of MACHINE:image-recipe name for OpenXT
-openxt_images=(
-    xenclient-dom0:xenclient-initramfs-image
-    openxt-installer:xenclient-installer-image
-    openxt-installer:xenclient-installer-part2-image
-    xenclient-stubdomain:xenclient-stubdomain-initramfs-image
-    xenclient-dom0:xenclient-dom0-image
-    xenclient-uivm:xenclient-uivm-image
-    xenclient-ndvm:xenclient-ndvm-image
-    xenclient-syncvm:xenclient-syncvm-image
-)
-
 # Usage: certs [path]
 # Create self-signed certificates in ./certs or create a link from [path] to
 # ./certs to point to existing certificates.
@@ -111,32 +99,45 @@ EOF
 
 
 # Usage: build
-# Build all the images of the OpenXT project using bitbake.
+# Build all the images of the OpenXT project using bitbake using the
+# build-manifest file in conf_dir.
 build() {
-    for e in ${openxt_images[@]}; do
-        local m="${e%%:*}"
-        local i="${e##*:}"
+    while read l ; do
+        if [ -z "${l%%#*}" ]; then
+            continue
+        fi
 
-        if ! MACHINE="$m" bitbake "$i" ; then
-            echo "MACHINE="$m" bitbake \"$i\" failed." >&2
+        local entry=(${l})
+        local machine="${entry[0]}"
+        local image="${entry[1]}"
+
+        if ! MACHINE="${machine}" bitbake "${image}" ; then
+            echo "MACHINE="${machine}" bitbake \"${image}\" failed." >&2
             break
         fi
-    done
+
+    done < "${conf_dir}/build-manifest"
 }
 
 # Usage: build
-# Re-build all the images of the OpenXT project using bitbake.
+# Re-build all the images of the OpenXT project using bitbake using the
+# build-manifest file in conf_dir.
 rebuild() {
-    for e in ${openxt_images[@]}; do
-        local m="${e%%:*}"
-        local i="${e##*:}"
+    while read l ; do
+        if [ -z "${l%%#*}" ]; then
+            continue
+        fi
 
-        if ! MACHINE="$m" bitbake -c cleanall "$i" ; then
-            echo "MACHINE="$m" bitbake -c cleanall \"$i\" failed." >&2
+        local entry=(${l})
+        local machine="${entry[0]}"
+        local image="${entry[1]}"
+
+        if ! MACHINE="${machine}" bitbake -c cleanall "${image}" ; then
+            echo "MACHINE="${machine}" bitbake -c cleanall \"${image}\" failed." >&2
             break
         fi
-        if ! MACHINE="$m" bitbake "$i" ; then
-            echo "MACHINE="$m" bitbake \"$i\" failed." >&2
+        if ! MACHINE="${machine}" bitbake "${image}" ; then
+            echo "MACHINE="${machine}" bitbake \"${image}\" failed." >&2
             break
         fi
     done
@@ -249,10 +250,13 @@ stage_repository_entry() {
 # Copy images from the deployment directory (deploy_dir) to the repository
 # staging area (repository_dir) then use the generated metadata to sign the
 # repository.
-# Uses the manifest file in conf_dir to prepare the images.
+# Uses the images-manifest file in conf_dir to prepare the images.
 stage_repository() {
     while read l; do
         # Quick parsing/formating.
+        if [ -z "${l%%#*}" ]; then
+            continue
+        fi
         entry=(${l})
         machine="${entry[0]}"
         img_id="${entry[1]}"
@@ -265,7 +269,7 @@ stage_repository() {
         img_dst_name="${img_dst_label}.${img_type}"
 
         stage_repository_entry "${machine}" "${img_id}" "${img_src_name}" "${img_dst_name}" "${img_dst_mnt}"
-    done < ${conf_dir}/manifest
+    done < ${conf_dir}/images-manifest
 
     sign_repository
 }

@@ -12,7 +12,8 @@
       <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
       <linkfile dest="conf/bblayers.conf" src="../.repo/manifests/stable-6-conf/bblayers.conf"/>
       <linkfile dest="conf/local.conf" src="../.repo/manifests/stable-6-conf/local.conf"/>
-      <linkfile dest="conf/manifest" src="../.repo/manifests/stable-6-conf/manifest"/>
+      <linkfile dest="conf/images-manifest" src="../.repo/manifests/stable-6-conf/images-manifest"/>
+      <linkfile dest="conf/build-manifest" src="../.repo/manifests/stable-6-conf/build-manifest"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="1f4bfa33073584c25396d74f3929f263f3df188b" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="8ab04afbffb4bc5184cfe0655049de6f44269990" path="layers/meta-openembedded"/>
