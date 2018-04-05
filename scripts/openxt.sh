@@ -353,11 +353,9 @@ stage_iso() {
     mkdir -p "$(dirname "${efi_img}")"
     dd if=/dev/zero bs=1M count=5 of="${efi_img}"
     /sbin/mkfs -t fat "${efi_img}"
-    fusefat -o rw+ "${efi_img}" "${efi_path}"
-    mkdir -p "${efi_path}/EFI/BOOT"
-    cp "${images_dir}/${machine}/grubx64.efi" "${efi_path}/EFI/BOOT/BOOTX64.EFI"
-    fusermount -u "${efi_path}"
-    rm -rf "${efi_path}"
+    mmd -i ${efi_img} EFI
+    mmd -i ${efi_img} EFI/BOOT
+    mcopy -i "${efi_img}" "${images_dir}/${machine}/grubx64.efi" ::EFI/BOOT/BOOTX64.EFI
 
     # --- Stage hybrid MBR image.
     local isohdp_src="${machine}/isohdpfx.bin"
