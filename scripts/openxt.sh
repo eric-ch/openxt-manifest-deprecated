@@ -578,7 +578,7 @@ stage() {
         "iso-old") stage_iso_legacy $@ ;;
         "iso") stage_iso $@ ;;
         "repository") stage_repository ;;
-        *)  echo "Unknown staging command \`$1\'." >&2
+        *)  echo "Unknown staging command \`${target}\'." >&2
             return 1
             ;;
     esac
@@ -593,7 +593,7 @@ deploy() {
         "usb-old") deploy_usb $@ ;;
         "iso-old") deploy_iso_legacy $@ ;;
         "iso") deploy_iso $@ ;;
-        *) echo "Unknown staging command \`$1\'." >&2
+        *) echo "Unknown staging command \`${target}\'." >&2
            return 1
            ;;
     esac
@@ -635,7 +635,7 @@ sync() {
     shift 1
     case "${target}" in
         "usb-old") sync_usb_legacy $@ ;;
-        *) echo "Unknown staging command \`$1\'." >&2
+        *) echo "Unknown staging command \`${target}\'." >&2
            return 1
            ;;
     esac
@@ -651,7 +651,7 @@ case "${command}" in
     "stage") stage $@ ;;
     "certs") certs $@ ;;
     "sync") sync $@ ;;
-    *) echo "Unknown command \`${cmd}'." >&2
+    *) echo "Unknown command \`${command}'." >&2
        usage 1
        ;;
 esac
