@@ -30,20 +30,6 @@ usage() {
     exit $1
 }
 
-# Parse options.
-while getopts ":h" opt; do
-    case $opt in
-        h)  usage 0 ;;
-        :)  echo "Options \`${OPTARG}' is missing an argument." >&2
-            usage 1
-            ;;
-        \?) echo "Unknown option \`${OPTARG}'." >&2
-            usage 1
-            ;;
-    esac
-done
-shift $((${OPTIND} - 1))
-
 # Usage: certs [path]
 # Create self-signed certificates in ./certs or create a link from [path] to
 # ./certs to point to existing certificates.
@@ -274,11 +260,12 @@ stage_repository() {
     sign_repository
 }
 
-# Usage: stage_iso
-# Copy images from the deployment directory (deploy_dir) to the iso staging
-# area (staging_dir) that are specific to ISO image generation.
+# Usage: stage_iso <machine>
+# Copy images from the deployment directory (deploy_dir) of the installer
+# machine to the iso staging area (staging_dir) that are specific to ISO image
+# generation.
 stage_iso() {
-    local machine="openxt-installer"
+    local machine="$1"
     local isolinux_subdir="iso/isolinux"
     # TODO: Well this is ugly.
     local image_name="xenclient-installer-image-${machine}"
@@ -364,6 +351,96 @@ stage_iso() {
     stage_build_output "${isohdp_src}" "${isohdp_dst}"
 }
 
+# Usage: stage_usb <machine>
+# Copy images from the deployment directory (deploy_dir) of the installer
+# machine to the usb staging area (staging_dir) that are specific to USB image
+# generation.
+stage_usb() {
+    local machine="$1"
+    local syslinux_subdir="usb/syslinux"
+    # TODO: Well this is ugly.
+    local image_name="xenclient-installer-image-${machine}"
+
+    # --- Write syslinux configuration.
+    mkdir -p "${staging_dir}/${syslinux_subdir}"
+    cat - > "${staging_dir}/${syslinux_subdir}/syslinux.cfg" <<EOF
+SERIAL 0
+DEFAULT openxt
+DISPLAY bootmsg.txt
+PROMPT 1
+TIMEOUT 20
+LABEL openxt
+  kernel mboot.c32
+  append tboot.gz min_ram=0x2000000 loglvl=all serial=115200,8n1,0x3f8 logging=serial,memory --- xen.gz flask=disabled console=com1 dom0_max_vcpus=1 com1=115200,8n1,pci dom0_mem=max:8G ucode=-1 --- vmlinuz quiet root=/dev/ram rw start_install=new eject_cdrom=1 answerfile=/install/answers/default.ans console=hvc0 console=/dev/tty2 selinux=0 --- rootfs.gz --- gm45.acm --- q35.acm --- q45q43.acm --- duali.acm --- quadi.acm --- ivb_snb.acm --- xeon56.acm --- xeone7.acm --- hsw.acm --- bdw.acm --- skl.acm --- kbl.acm --- microcode_intel.bin
+EOF
+    cat - > "${staging_dir}/${syslinux_subdir}/bootmsg.txt" << EOF
+
+OpenXT $OPENXT_VERSION (Build $OPENXT_BUILD_ID)
+
+EOF
+    # --- Stage installer initrd.
+    local initrd_type="cpio.gz"
+    local initrd_src_path="${machine}/${image_name}.${initrd_type}"
+    local initrd_dst_name="rootfs.gz"
+    local initrd_dst_path="${syslinux_subdir}/${initrd_dst_name}"
+
+    stage_build_output "${initrd_src_path}" "${initrd_dst_path}"
+
+    # --- Stage kernel.
+    local kernel_type="bzImage"
+    local kernel_src_path="${machine}/${kernel_type}-${machine}.bin"
+    local kernel_dst_path="${syslinux_subdir}/vmlinuz"
+
+    stage_build_output "${kernel_src_path}" "${kernel_dst_path}"
+
+    # --- Stage hypervisor.
+    local hv_src_path="${machine}/xen.gz"
+    local hv_dst_path="${syslinux_subdir}/xen.gz"
+
+    stage_build_output "${hv_src_path}" "${hv_dst_path}"
+
+    # --- Stage tboot.
+    local tboot_src_path="${machine}/tboot.gz"
+    local tboot_dst_path="${syslinux_subdir}/tboot.gz"
+
+    stage_build_output "${tboot_src_path}" "${tboot_dst_path}"
+
+    # --- Stage ACMs & license.
+    local acms_src_dir="${machine}/"
+    local acms_src_suffix=".acm"
+    local acms_dst_path="${syslinux_subdir}"
+
+    stage_build_output_by_suffix "${acms_src_dir}" "${acms_src_suffix}" "${acms_dst_path}"
+
+    local lic_src_path="${machine}/license-SINIT-ACMs.txt"
+    local lic_dst_path="${syslinux_subdir}/license-SINIT-ACMs.txt"
+
+    stage_build_output "${lic_src_path}" "${lic_dst_path}"
+
+    # --- Stage microcode.
+    local uc_src_path="${machine}/microcode_intel.bin"
+    local uc_dst_path="${syslinux_subdir}/microcode_intel.bin"
+
+    stage_build_output "${uc_src_path}" "${uc_dst_path}"
+}
+
+# Usage: stage <command>
+# Stage commands wrapper.
+stage() {
+    target="$1"
+    shift 1
+    case "${target}" in
+        "usb-old") stage_usb xenclient-dom0 ;;
+        "iso-old") stage_iso xenclient-dom0 ;;
+        "iso") stage_iso openxt-installer ;;
+        "repository") stage_repository ;;
+        *)  echo "Unknown staging command \`${target}\'." >&2
+            return 1
+            ;;
+    esac
+}
+
+
 # Usage: deploy_iso_legacy
 # Run the required staging steps and generate the ISO image.
 deploy_iso_legacy() {
@@ -434,78 +511,6 @@ deploy_iso() {
         "${staging_dir}/repository"
 }
 
-# Usage: stage_usb_legacy
-# Copy images from the deployment directory (deploy_dir) to the usb staging
-# area (staging_dir) that are specific to USB image generation.
-stage_usb_legacy() {
-    local machine="xenclient-dom0"
-    local syslinux_subdir="usb/syslinux"
-    # TODO: Well this is ugly.
-    local image_name="xenclient-installer-image-xenclient-dom0"
-
-    # --- Write syslinux configuration.
-    mkdir -p "${staging_dir}/${syslinux_subdir}"
-    cat - > "${staging_dir}/${syslinux_subdir}/syslinux.cfg" <<EOF
-SERIAL 0
-DEFAULT openxt
-DISPLAY bootmsg.txt
-PROMPT 1
-TIMEOUT 20
-LABEL openxt
-  kernel mboot.c32
-  append tboot.gz min_ram=0x2000000 loglvl=all serial=115200,8n1,0x3f8 logging=serial,memory --- xen.gz flask=disabled console=com1 dom0_max_vcpus=1 com1=115200,8n1,pci dom0_mem=max:8G ucode=-1 --- vmlinuz quiet root=/dev/ram rw start_install=new eject_cdrom=1 answerfile=/install/answers/default.ans console=hvc0 console=/dev/tty2 selinux=0 --- rootfs.gz --- gm45.acm --- q35.acm --- q45q43.acm --- duali.acm --- quadi.acm --- ivb_snb.acm --- xeon56.acm --- xeone7.acm --- hsw.acm --- bdw.acm --- skl.acm --- kbl.acm --- microcode_intel.bin
-EOF
-    cat - > "${staging_dir}/${syslinux_subdir}/bootmsg.txt" << EOF
-
-0fOpenXT $OPENXT_VERSION (Build $OPENXT_BUILD_ID)
-
-EOF
-    # --- Stage installer initrd.
-    local initrd_type="cpio.gz"
-    local initrd_src_path="${machine}/${image_name}.${initrd_type}"
-    local initrd_dst_name="rootfs.gz"
-    local initrd_dst_path="${syslinux_subdir}/${initrd_dst_name}"
-
-    stage_build_output "${initrd_src_path}" "${initrd_dst_path}"
-
-    # --- Stage kernel.
-    local kernel_type="bzImage"
-    local kernel_src_path="${machine}/${kernel_type}-${machine}.bin"
-    local kernel_dst_path="${syslinux_subdir}/vmlinuz"
-
-    stage_build_output "${kernel_src_path}" "${kernel_dst_path}"
-
-    # --- Stage hypervisor.
-    local hv_src_path="${machine}/xen.gz"
-    local hv_dst_path="${syslinux_subdir}/xen.gz"
-
-    stage_build_output "${hv_src_path}" "${hv_dst_path}"
-
-    # --- Stage tboot.
-    local tboot_src_path="${machine}/tboot.gz"
-    local tboot_dst_path="${syslinux_subdir}/tboot.gz"
-
-    stage_build_output "${tboot_src_path}" "${tboot_dst_path}"
-
-    # --- Stage ACMs & license.
-    local acms_src_dir="${machine}/"
-    local acms_src_suffix=".acm"
-    local acms_dst_path="${syslinux_subdir}"
-
-    stage_build_output_by_suffix "${acms_src_dir}" "${acms_src_suffix}" "${acms_dst_path}"
-
-    local lic_src_path="${machine}/license-SINIT-ACMs.txt"
-    local lic_dst_path="${syslinux_subdir}/license-SINIT-ACMs.txt"
-
-    stage_build_output "${lic_src_path}" "${lic_dst_path}"
-
-    # --- Stage microcode.
-    local uc_src_path="${machine}/microcode_intel.bin"
-    local uc_dst_path="${syslinux_subdir}/microcode_intel.bin"
-
-    stage_build_output "${uc_src_path}" "${uc_dst_path}"
-}
-
 # Usage: deploy_usb_legacy </dev/sdXN>
 # Run the required staging steps, format the /dev/sdXN partition, install the
 # syslinux mbr on the device (/dev/sdX), install syslinux on it, then deploy
@@ -568,22 +573,6 @@ deploy_usb_legacy() {
     rm -r "${mnt}"
 }
 
-# Usage: stage <command>
-# Stage commands wrapper.
-stage() {
-    target="$1"
-    shift 1
-    case "${target}" in
-        "usb-old") stage_usb_legacy $@ ;;
-        "iso-old") stage_iso_legacy $@ ;;
-        "iso") stage_iso $@ ;;
-        "repository") stage_repository ;;
-        *)  echo "Unknown staging command \`${target}\'." >&2
-            return 1
-            ;;
-    esac
-}
-
 # Usage: deploy <command>
 # Deploy OpenXT on the selected installation media.
 deploy() {
@@ -598,6 +587,7 @@ deploy() {
            ;;
     esac
 }
+
 
 # Usage: sync_usb_legacy </dev/sdXN>.
 # Copy the staged file in the USB installer partition.
@@ -635,12 +625,31 @@ sync() {
     shift 1
     case "${target}" in
         "usb-old") sync_usb_legacy $@ ;;
-        *) echo "Unknown staging command \`${target}\'." >&2
+        *) echo "Unknown sync command \`${target}\'." >&2
            return 1
            ;;
     esac
 }
 
+
+# Parse options.
+while getopts ":h" opt; do
+    case $opt in
+        h)  usage 0 ;;
+        :)  echo "Options \`${OPTARG}' is missing an argument." >&2
+            usage 1
+            ;;
+        \?) echo "Unknown option \`${OPTARG}'." >&2
+            usage 1
+            ;;
+    esac
+done
+shift $((${OPTIND} - 1))
+
+if [ $# -lt 1 ]; then
+    echo "No command specified." >&2
+    usage 1
+fi
 # Sanitize input.
 command="$1"
 shift 1
