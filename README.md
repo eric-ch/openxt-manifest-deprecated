@@ -23,12 +23,12 @@ Stabilisation manifest for 8.x releases.
 
 * OpenXT: stable-8 branch;
 * Bitbake: tag 1.34;
-* openembedded-core: revision 5e4b4874c4;
-* meta-openembedded: revision dfbdd28d2;
-* meta-intel: revision 42072ef;
-* meta-java: revision 0c27b12;
-* meta-virtualization: revision 45ad257;
-* meta-selinux: revision d855c62;
+* openembedded-core: revision 5e4b4874c4d81b62a32b3836d1c22ecc4c5479c6;
+* meta-openembedded: revision dfbdd28d206a74bf264c2f7ee0f7b3e5af587796;
+* meta-intel: revision 42072ef80e0a3dfc65188778b471f0db9264520e;
+* meta-java: revision 0c27b120aa508e4bb41394b8dd3645949a611128;
+* meta-virtualization: revision 45ad257a1e4a6707c376d2f7eb26c3c8bdf03607;
+* meta-selinux: revision d855c624f32c5e599bf27e06cb8f5b25b3aae12d;
 
 ### stable-7
 
