@@ -1,1 +1,2 @@
 work-around-race-sqlite-api.patch
+0001-git-Use-relative-path-to-mirror-repos.patch
