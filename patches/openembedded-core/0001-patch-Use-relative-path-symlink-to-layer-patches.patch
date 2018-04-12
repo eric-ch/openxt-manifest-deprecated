@@ -1,6 +1,6 @@
-From 1de2cef2e0aecb0c7276db06b4007c4423dd7a08 Mon Sep 17 00:00:00 2001
+From 934b66bc71b9c92f9523aeb93e443e369ee1606d Mon Sep 17 00:00:00 2001
 From: Eric Chanudet <chanudete@ainfosec.com>
-Date: Mon, 9 Apr 2018 14:36:56 -0400
+Date: Wed, 11 Apr 2018 17:35:34 -0400
 Subject: [PATCH] patch: Use relative path symlink to layer patches.
 
 Uses relative path to symlink patches in tmpdir to their layer origin:
@@ -10,28 +10,57 @@ This is only useful when building in a container using a file-system
 binding, the absolute path in the container will likely not be valid
 outside.
 
+v2:
+- Handle kernel work-shared symlink.
+- Adapt patch.py to handle relative symlink to work-shared.
+
 Signed-off-by: Eric Chanudet <chanudete@ainfosec.com>
 ---
- meta/lib/oe/patch.py | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ meta/classes/kernel.bbclass |  2 +-
+ meta/lib/oe/patch.py        | 20 +++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
+diff --git a/meta/classes/kernel.bbclass b/meta/classes/kernel.bbclass
+index ce2cab65ae..d065ef7fc8 100644
+--- a/meta/classes/kernel.bbclass
++++ b/meta/classes/kernel.bbclass
+@@ -123,7 +123,7 @@ base_do_unpack_append () {
+         else:
+             import shutil
+             shutil.move(s, kernsrc)
+-            os.symlink(kernsrc, s)
++            os.symlink(os.path.relpath(kernsrc, s)[3:], s)
+ }
+ 
+ inherit kernel-arch deploy
 diff --git a/meta/lib/oe/patch.py b/meta/lib/oe/patch.py
-index f1ab3dd809..44f2cacce8 100644
+index f1ab3dd809..6b5a90be8d 100644
 --- a/meta/lib/oe/patch.py
 +++ b/meta/lib/oe/patch.py
-@@ -610,7 +610,14 @@ class QuiltTree(PatchSet):
+@@ -610,7 +610,25 @@ class QuiltTree(PatchSet):
          if not self.initialized:
              self.InitFromDir()
          PatchSet.Import(self, patch, force)
 -        oe.path.symlink(patch["file"], self._quiltpatchpath(patch["file"]), force=True)
 +
 +        topdir = self.d.getVar('TOPDIR')
-+        dst = self._quiltpatchpath(patch["file"])
-+        src = os.path.join(topdir, patch["file"])
-+        rel = os.path.relpath(src, dst)
++        target = os.path.join(topdir, patch["file"])
++        if os.path.islink(self.dir):
++            # Read the link, and apply it in its position (dirname of absolute
++            # path position).
++            fulllink = os.path.join(os.path.dirname(self.dir), os.readlink(self.dir))
++            # Then normalize everything for good measure to remove useless relative syntax...
++            normlink = os.path.normpath(fulllink)
++            # Finaly append where we want it to be.
++            link = os.path.join(normlink, "patches", os.path.basename(patch["file"]))
++        else:
++            link = self._quiltpatchpath(patch["file"])
++
++        relpath = os.path.relpath(target, os.path.dirname(link))
++
 +        # Remove one '../' as relpath is called with the "file" basename at the
 +        # end (see _quiltpatchpath).
-+        oe.path.symlink(rel[3:], dst, force=True)
++        oe.path.symlink(relpath, link, force=True)
          with open(os.path.join(self.dir, "patches", "series"), "a") as f:
              f.write(os.path.basename(patch["file"]) + " -p" + patch["strippath"] + "\n")
          patch["quiltfile"] = self._quiltpatchpath(patch["file"])
