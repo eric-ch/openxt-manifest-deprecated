@@ -572,6 +572,7 @@ __prepare_installer_legacy() {
         return 1
     fi
 
+    set -e
     # Wipe it all. YOU WERE WARNED.
     dd bs=512 count=63 if=/dev/zero of="${device}"
 
@@ -605,6 +606,7 @@ __prepare_installer_legacy() {
 
     umount "${mnt}"
     rm -r "${mnt}"
+    set +e
 }
 
 # Usage: deploy_usb_legacy </dev/sdX>
@@ -685,6 +687,7 @@ __prepare_installer() {
         return 1
     fi
 
+    set -e
     # Wipe it all. YOU WERE WARNED.
     dd bs=512 count=63 if=/dev/zero of="${device}"
 
@@ -716,6 +719,7 @@ __prepare_installer() {
     umount "${part_storage}"
 
     rm -r "${mnt}"
+    set +e
 }
 
 # Usage: deploy_usb </dev/sdX>
