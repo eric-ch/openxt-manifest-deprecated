@@ -11,6 +11,7 @@ repository_dir=${repository_dir:-${staging_dir}/${repository_subdir}}
 certs_dir=${certs_dir:-./oxt-certs}
 host_syslinux_dir="${host_syslinux_dir:-/usr/lib/syslinux}"
 
+# OpenXT configuration.
 if [ -e "${conf_dir}/openxt.conf" ]; then
     . "${conf_dir}/openxt.conf"
 fi
@@ -518,26 +519,204 @@ deploy_iso() {
         "${staging_dir}/repository"
 }
 
-# Usage: deploy_usb_legacy </dev/sdXN>
-# Run the required staging steps, format the /dev/sdXN partition, install the
-# syslinux mbr on the device (/dev/sdX), install syslinux on it, then deploy
-# the installer and installation required files on the newly created partition.
+# Usage: __prepare_installer_legacy </dev/sdX>
+# Need UID 0.
+# Erase, format and prepare /dev/sdX with OpenXT MBR legacy installer:
+#  - Create /dev/sdX1, FAT32 bootable partition;
+#  - Install Syslinux in /dev/sdX1;
+#  - Dump Syslinux MBR on /dev/sdX;
+#  - Install OpenXT installer in /dev/sdX1;
+#  - Install OpenXT installation repository in the repository sub-directory;
+__prepare_installer_legacy() {
+    local device="$1"
+    local partition="${device}1"
+    local mnt=`mktemp -d`
+
+    # Sanity.
+    if [ "$#" -ne "1" ]; then
+        echo "__prepare_installer_legacy() has no device specified." >&2
+        return 1
+    fi
+    if [ "${UID}" -ne "0" ]; then
+        echo "__prepare_installer_legacy() has to be run as root." >&2
+        return 1
+    fi
+
+    # Wipe it all. YOU WERE WARNED.
+    dd bs=512 count=63 if=/dev/zero of="${device}"
+
+    # Partition.
+    parted --script "${device}" \
+        mklabel msdos \
+        mkpart primary fat32 1MiB 100% \
+        set 1 boot on
+
+    # Format media.
+    mkfs -t fat "${partition}"
+
+    # Prepare media layout.
+    mount "${partition}" "${mnt}"
+    mkdir -p "${mnt}/syslinux"
+    umount "${partition}"
+    # Install syslinux.
+    syslinux -i "${partition}" -d "syslinux"
+    # ... with MBR.
+    dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/bios/mbr.bin" of="${device}"
+
+    # Deploy syslinux modules.
+    mount "${partition}" "${mnt}"
+    for bin in mboot.c32 ldlinux.c32 libcom32.c32 ; do
+        cp -v "${host_syslinux_dir}/bios/${bin}" "${mnt}/syslinux"
+    done
+
+    # Deploy installation files.
+    cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
+    cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
+
+    umount "${mnt}"
+    rm -r "${mnt}"
+}
+
+# Usage: deploy_usb_legacy </dev/sdX>
+# Run the required staging steps, format /dev/sdX, install the Syslinux MBR on
+# it and OpenXT installer and repository on it.
 deploy_usb_legacy() {
     local sd="$1"
     local reply=""
     local attempts=5
 
-    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
+    # Sanity.
+    if [ "$#" -lt 1 ]; then
+        echo "No device provided." >&2
         return 1
     fi
+    if [ ! -b "${sd}" ]; then
+        echo "\`${sd}' is not a block device." >&2
+        return 1
+    fi
+
+    # Safeguard.
+    local usb_driver="$(udevadm info --query=all -n ${sd} | sed -ne 's/E: ID_USB_DRIVER=\(.\+\)/\1/p')"
+
+    if [ "${usb_driver}" != "usb-storage" ]; then
+        echo "${sd} is not a storage USB device. Abort." >&2
+        return 1
+    fi
+
+    # Last warning...
+    echo -n "This will erase ${sd}, are you sure? (y/N) "
+    while [ "${reply}" != "y" ]; do
+        read reply
+        case "${reply}" in
+            ""|"n"|"N") return 0 ;;
+        esac
+        if [ "${attempts}" -lt 0 ]; then
+            echo "" >&2
+            echo "Assuming \`no'... Bailing out." >&2
+            return 1
+        fi
+    done
 
     # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
     # meta files.
     stage "repository"
     # Prepare USB image layout.
     stage "usb-old"
+    # Deploy.
+    sudo su -c " \
+        staging_dir=${staging_dir}; \
+        host_syslinux_dir=${host_syslinux_dir}; \
+        $(declare -f __prepare_installer_legacy); \
+        __prepare_installer_legacy ${sd} \
+    "
+}
 
-    echo -n "This will erase ${sd}, are you sure? (y/N)"
+# Usage: __prepare_installer </dev/sdX>
+# Need UID 0.
+# Erase, format and prepare /dev/sdX with OpenXT EFI installer:
+#  - Create /dev/sdX1, ESP bootable FAT32 partition;
+#  - Create /dev/sdX2, storage EXT4 partition;
+#  - Install Syslinux EFI in /dev/sdX1;
+#  - Install OpenXT installer in /dev/sdX1;
+#  - Install OpenXT installation repository in /dev/sdX2;
+__prepare_installer() {
+    local device="$1"
+    local part_esp="${device}1"
+    local part_storage="${device}2"
+    local mnt="$(mktemp -d)"
+
+    # Sanity.
+    if [ "$#" -ne "1" ]; then
+        echo "__prepare_installer() has no device specified." >&2
+        return 1
+    fi
+    if [ "${UID}" -ne "0" ]; then
+        echo "__prepare_installer() has to be run as root." >&2
+        return 1
+    fi
+
+    # Wipe it all. YOU WERE WARNED.
+    dd bs=512 count=63 if=/dev/zero of="${device}"
+
+    # Partition.
+    parted --script "${sd}" \
+        mklabel gpt \
+        mkpart ESP fat32 1MiB 551MiB \
+        set 1 esp on \
+        mkpart primary ext4 551MiB 100%
+
+    # Format media.
+    # parted will not mkfs, this is not intuitive.
+    mkfs -t fat "${part_esp}"
+    mkfs -t ext4 "${part_storage}"
+
+    # Install Syslinux EFI.
+    mount "${part_esp}" "${mnt}"
+    mkdir -p "${mnt}/EFI/BOOT"
+    cp "${host_syslinux_dir}/syslinux.efi" "${mnt}/EFI/BOOT/BOOTX64.EFI"
+    for bin in mboot.c32 ldlinux.e64 libcom32.c32 ; do
+        cp -v "${host_syslinux_dir}/${bin}" "${mnt}"/EFI/BOOT
+    done
+    # Deploy installer files.
+    cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
+    umount "${part_esp}"
+    # Deploy repository files.
+    mount "${part_storage}" "${mnt}"
+    cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
+    umount "${part_storage}"
+
+    rm -r "${mnt}"
+}
+
+# Usage: deploy_usb </dev/sdX>
+# Run the required staging steps, format the /dev/sdXN partition, install the
+# syslinux mbr on the device (/dev/sdX), install syslinux on it, then deploy
+# the installer and installation required files on the newly created partition.
+deploy_usb() {
+    local sd="$1"
+    local reply=""
+    local attempts=5
+
+    # Sanity.
+    if [ "$#" -lt 1 ]; then
+        echo "No device provided." >&2
+        return 1
+    fi
+    if [ ! -b "${sd}" ]; then
+        echo "\`${sd}' is not a block device." >&2
+        return 1
+    fi
+
+    # Safeguard.
+    local usb_driver="$(udevadm info --query=all -n ${sd} | sed -ne 's/E: ID_USB_DRIVER=\(.\+\)/\1/p')"
+
+    if [ "${usb_driver}" != "usb-storage" ]; then
+        echo "${sd} is not a storage USB device. Abort." >&2
+        return 1
+    fi
+
+    # Last warning...
+    echo -n "This will erase ${sd}, are you sure? (y/N) "
     while [ "${reply}" != "y" ]; do
         read reply
         case "${reply}" in
@@ -549,101 +728,19 @@ deploy_usb_legacy() {
             return 1
         fi
     done
-
-    local mnt=`mktemp -d`
-
-    # Format media.
-    sudo mkfs.vfat "${sd}"
-
-    # Prepare media layout.
-    sudo mount "${sd}" "${mnt}"
-    sudo mkdir -p "${mnt}/syslinux"
-    sudo umount "${sd}"
-    # Install syslinux.
-    sudo syslinux -i "${sd}" -d "syslinux"
-    # ... with MBR.
-    sudo dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/bios/mbr.bin" of="${sd%%[0-9]*}"
-    sudo parted "${sd%%[0-9]*}" set 1 boot on
-
-    # Deploy syslinux modules.
-    sudo mount "${sd}" "${mnt}"
-    for bin in mboot.c32 ldlinux.c32 libcom32.c32 ; do
-        sudo cp -v "${host_syslinux_dir}/bios/${bin}" "${mnt}/syslinux"
-    done
-
-    # Deploy installation files.
-    sudo cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
-    sudo cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
-
-    sudo umount "${mnt}"
-    rm -r "${mnt}"
-}
-
-# Usage: deploy_usb </dev/sdX>
-# 1. Run the required staging steps;
-# 2. Format the /dev/sdX device:
-#    - /dev/sdX1: ESP (551M), bootable.
-#    - /dev/sdX2: Storage
-# 3. Deploy syslinux EFI in the ESP.
-# 4. Deploy repository in /dev/sdX2.
-deploy_usb() {
-    local sd="$1"
-    local reply=""
-    local attempts=5
-
-    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
-        return 1
-    fi
 
     # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
     # meta files.
     stage "repository"
     # Prepare USB image layout.
     stage "usb"
-
-    echo -n "This will erase ${sd}, are you sure? (y/N)"
-    while [ "${reply}" != "y" ]; do
-        read reply
-        case "${reply}" in
-            ""|"n"|"N") return 0 ;;
-        esac
-        if [ "${attempts}" -lt 0 ]; then
-            echo "" >&2
-            echo "Assuming \`no'... Bailing out." >&2
-            return 1
-        fi
-    done
-
-    # Create ESP and fillup the rest.
-    # TODO: How nice would it be to have a RW installer image instead of an
-    #       initramfs... Would make debugging it much easier.
-    sudo parted --script ${sd} \
-        mklabel gpt \
-        mkpart ESP fat32 1MiB 551MiB \
-        set 1 esp on \
-        mkpart primary ext4 551MiB 100%
-
-    # parted will not mkfs, this is not intuitive.
-    sudo mkfs -t fat "${sd}1"
-    sudo mkfs -t ext4 "${sd}2"
-
-    local efi_img="${staging_dir}/${isolinux_subdir}/efiboot.img"
-    local mnt=$(mktemp -d)
-    local machine="openxt-installer"
-
-    sudo mount "${sd}1" "${mnt}"
-    sudo mkdir -p "${mnt}/EFI/BOOT"
-    sudo cp "${host_syslinux_dir}/syslinux.efi" "${mnt}/EFI/BOOT/BOOTX64.EFI"
-    for bin in mboot.c32 ldlinux.e64 libcom32.c32 ; do
-        sudo cp -v "${host_syslinux_dir}/${bin}" "${mnt}"/EFI/BOOT
-    done
-    # Deploy installation files.
-    sudo cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
-    sudo umount "${sd}1"
-
-    sudo mount "${sd}2" "${mnt}"
-    sudo cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
-    sudo umount "${sd}2"
+    # Deploy.
+    sudo su -c " \
+        staging_dir=${staging_dir}; \
+        host_syslinux_dir=${host_syslinux_dir}; \
+        $(declare -f __prepare_installer); \
+        __prepare_installer ${sd} \
+    "
 }
 
 # Usage: deploy_usage
