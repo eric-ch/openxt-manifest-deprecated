@@ -150,7 +150,7 @@ stage_build_output_by_suffix() {
 
 sign_repository() {
     if [ ! -f "${repository_dir}/XC-PACKAGES" ]; then
-        echo "Repository in \`${repository_dir}\' is not ready yet, XC-PACKAGES is missing." >&2
+        echo "Repository in \`${repository_dir}' is not ready yet, XC-PACKAGES is missing." >&2
         return 1
     fi
 
@@ -437,7 +437,7 @@ stage() {
         "iso") stage_iso openxt-installer ;;
         "repository") stage_repository ;;
         "help") stage_usage 0 ;;
-        *)  echo "Unknown staging command \`${target}\'." >&2
+        *)  echo "Unknown staging command \`${target}'." >&2
             stage_usage 1
             ;;
     esac
@@ -541,7 +541,7 @@ deploy_usb_legacy() {
         esac
         if [ "${attempts}" -lt 0 ]; then
             echo "" >&2
-            echo "Assuming \`no\'... Bailing out." >&2
+            echo "Assuming \`no'... Bailing out." >&2
             return 1
         fi
     done
@@ -605,7 +605,7 @@ deploy_usb() {
         esac
         if [ "${attempts}" -lt 0 ]; then
             echo "" >&2
-            echo "Assuming \`no\'... Bailing out." >&2
+            echo "Assuming \`no'... Bailing out." >&2
             return 1
         fi
     done
@@ -664,7 +664,7 @@ deploy() {
         "usb") deploy_usb $@ ;;
         "iso") deploy_iso $@ ;;
         "help") deploy_usage 0 ;;
-        *) echo "Unknown staging command \`${target}\'." >&2
+        *) echo "Unknown staging command \`${target}'." >&2
            deploy_usage 1
            ;;
     esac
@@ -707,7 +707,7 @@ sync() {
     shift 1
     case "${target}" in
         "usb-old") sync_usb_legacy $@ ;;
-        *) echo "Unknown sync command \`${target}\'." >&2
+        *) echo "Unknown sync command \`${target}'." >&2
            return 1
            ;;
     esac
