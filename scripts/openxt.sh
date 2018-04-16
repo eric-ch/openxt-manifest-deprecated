@@ -418,6 +418,32 @@ EOF
     stage_build_output "${uc_src_path}" "${uc_dst_path}"
 }
 
+# Usage: check_cmd_version
+# Compares stage/deploy command against OpenXT version and abort if support is
+# no longer provided.
+check_cmd_version() {
+    local cmd="$1"
+
+    # Ignore development/hacked versions.
+    if [ "${OPENXT_VERSION}" = "0.0.0" -o -z "${OPENXT_VERSION}" ]; then
+        return 0
+    fi
+    if [ "${OPENXT_VERSION%%.*}" -ge "8" ]; then
+        case "${cmd}" in
+            "iso-old"|"usb-old")
+                echo "\`${cmd}' is no longer supported with OpenXT 8 and later versions. See \`${cmd%%-old}' command replacement." >&2
+                exit 1 ;;
+            "iso"|"usb") return 0 ;;
+        esac
+    else
+        case "${cmd}" in
+            "iso-old"|"usb-old") return 0 ;;
+            "iso"|"usb") echo "\`${cmd}' is not supported with OpenXT 7 and earlier versions. See \`${cmd}-old' legacy support." >&2
+               exit 1 ;;
+        esac
+    fi
+}
+
 # Usage: stage_usage
 # Display usage for this command wrapper.
 stage_usage() {
@@ -436,10 +462,14 @@ stage() {
     target="$1"
     shift 1
     case "${target}" in
-        "usb-old") stage_usb xenclient-dom0 ;;
-        "iso-old") stage_iso xenclient-dom0 ;;
-        "usb") stage_usb openxt-installer ;;
-        "iso") stage_iso openxt-installer ;;
+        "usb-old") check_cmd_version "${target}"
+                   stage_usb xenclient-dom0 ;;
+        "iso-old") check_cmd_version "${target}"
+                   stage_iso xenclient-dom0 ;;
+        "usb") check_cmd_version "${target}"
+               stage_usb openxt-installer ;;
+        "iso") check_cmd_version "${target}"
+               stage_iso openxt-installer ;;
         "repository") stage_repository ;;
         "help") stage_usage 0 ;;
         *)  echo "Unknown staging command \`${target}'." >&2
@@ -659,7 +689,7 @@ __prepare_installer() {
     dd bs=512 count=63 if=/dev/zero of="${device}"
 
     # Partition.
-    parted --script "${sd}" \
+    parted --script "${device}" \
         mklabel gpt \
         mkpart ESP fat32 1MiB 551MiB \
         set 1 esp on \
@@ -673,9 +703,9 @@ __prepare_installer() {
     # Install Syslinux EFI.
     mount "${part_esp}" "${mnt}"
     mkdir -p "${mnt}/EFI/BOOT"
-    cp "${host_syslinux_dir}/syslinux.efi" "${mnt}/EFI/BOOT/BOOTX64.EFI"
+    cp "${host_syslinux_dir}/efi64/syslinux.efi" "${mnt}/EFI/BOOT/BOOTX64.EFI"
     for bin in mboot.c32 ldlinux.e64 libcom32.c32 ; do
-        cp -v "${host_syslinux_dir}/${bin}" "${mnt}"/EFI/BOOT
+        cp -v "${host_syslinux_dir}/efi64/${bin}" "${mnt}"/EFI/BOOT
     done
     # Deploy installer files.
     cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
@@ -747,10 +777,10 @@ deploy_usb() {
 # Display usage for this command wrapper.
 deploy_usage() {
     echo "Deployment command list:"
-    echo "  usb-old <device-node>: Wipe and partition the device to make a BIOS/MBR bootable Syslinux OpenXT installer."
-    echo "  iso-old: Create a BIOS/MBR bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive)."
-    echo "  usb <devide-node>: Wipe and partition the device to make an EFI bootable Syslinux OpenXT installer."
-    echo "  iso: Create an EFI bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive)."
+    echo "  usb-old <device-node>: Wipe and partition the device to make a BIOS/MBR bootable Syslinux OpenXT installer. This installer is available until OpenXT 7."
+    echo "  iso-old: Create a BIOS/MBR bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive). This installeris available until OpenXT 7."
+    echo "  usb <devide-node>: Wipe and partition the device to make an EFI bootable Syslinux OpenXT installer. This installer is available starting with OpenXT 8."
+    echo "  iso: Create an EFI bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive). This installer is available starting with OpenXT 8."
     exit $1
 }
 
@@ -759,11 +789,16 @@ deploy_usage() {
 deploy() {
     target="$1"
     shift 1
+
     case "${target}" in
-        "usb-old") deploy_usb_legacy $@ ;;
-        "iso-old") deploy_iso_legacy $@ ;;
-        "usb") deploy_usb $@ ;;
-        "iso") deploy_iso $@ ;;
+        "usb-old") check_cmd_version ${target}
+                   deploy_usb_legacy $@ ;;
+        "iso-old") check_cmd_version "${target}"
+                   deploy_iso_legacy $@ ;;
+        "usb") check_cmd_version "${target}"
+               deploy_usb $@ ;;
+        "iso") check_cmd_version "${target}"
+               deploy_iso $@ ;;
         "help") deploy_usage 0 ;;
         *) echo "Unknown staging command \`${target}'." >&2
            deploy_usage 1
