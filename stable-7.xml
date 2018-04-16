@@ -23,8 +23,8 @@
   <project remote="yocto" name="meta-selinux" revision="4c75d9cbcf1d75043c7c5ab315aa383d9b227510" path="layers/meta-selinux"/>
   <project remote="yocto" name="meta-virtualization" revision="042425c1d98bdd7e44a62789bd03b375045266f5" path="layers/meta-virtualization"/>
 
-  <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe"/>
-  <project remote="github" name="openxt/meta-openxt-ocaml-platform" path="layers/meta-openxt-ocaml-platform"/>
+  <project remote="github" name="eric-ch/xenclient-oe" path="layers/xenclient-oe"/>
+  <project remote="github" name="eric-ch/meta-openxt-ocaml-platform" path="layers/meta-openxt-ocaml-platform"/>
   <project remote="github" name="openxt/meta-openxt-haskell-platform" path="layers/meta-openxt-haskell-platform"/>
 
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
