@@ -14,6 +14,7 @@
       <linkfile dest="conf/local.conf" src="../.repo/manifests/conf/local.conf"/>
       <linkfile dest="conf/images-manifest" src="../.repo/manifests/conf/images-manifest"/>
       <linkfile dest="conf/build-manifest" src="../.repo/manifests/conf/build-manifest"/>
+      <linkfile dest="conf/openxt.conf" src="../.repo/manifests/conf/openxt.conf"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="pyro" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="pyro" path="layers/meta-openembedded"/>

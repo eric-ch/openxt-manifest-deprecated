@@ -11,10 +11,14 @@ repository_dir=${repository_dir:-${staging_dir}/${repository_subdir}}
 certs_dir=${certs_dir:-./oxt-certs}
 host_syslinux_dir="${host_syslinux_dir:-/usr/lib/syslinux}"
 
-# Default naming configuration.
-OPENXT_BUILD_ID=${OPENXT_BUILD_ID:-"42"}
-OPENXT_VERSION=${OPENXT_VERSION:-"8.0.0"}
-OPENXT_RELEASE=${OPENXT_RELEASE:-"pyromancer"}
+if [ -e "${conf_dir}/openxt.conf" ]; then
+    . "${conf_dir}/openxt.conf"
+fi
+# Fallback naming configuration.
+OPENXT_BUILD_ID=${OPENXT_BUILD_ID:-"0"}
+OPENXT_VERSION=${OPENXT_VERSION:-"0.0.0"}
+OPENXT_RELEASE=${OPENXT_RELEASE:-"none"}
+OPENXT_UPGRADEABLE_RELEASES=${OPENXT_UPGRADEABLE_RELEASES:-"0.0.0"}
 
 # Usage: usage <exit-code>
 # Display the usage of this script.

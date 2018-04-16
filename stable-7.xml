@@ -14,6 +14,7 @@
       <linkfile dest="conf/local.conf" src="../.repo/manifests/stable-7-conf/local.conf"/>
       <linkfile dest="conf/images-manifest" src="../.repo/manifests/stable-7-conf/images-manifest"/>
       <linkfile dest="conf/build-manifest" src="../.repo/manifests/stable-7-conf/build-manifest"/>
+      <linkfile dest="conf/openxt.conf" src="../.repo/manifests/stable-7-conf/openxt.conf"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="6af6e285e8bed16b02dee27c8466e9f4f9f21e30" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="2ea8d7f54a061e902657c4f8ea1f7f7c25c6c4e1" path="layers/meta-openembedded"/>
