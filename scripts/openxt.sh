@@ -9,6 +9,7 @@ images_dir=${images_dir:-${deploy_dir}/${tclibc}/images}
 repository_subdir=${repository_subdir:-repository/packages.main}
 repository_dir=${repository_dir:-${staging_dir}/${repository_subdir}}
 certs_dir=${certs_dir:-./oxt-certs}
+host_syslinux_dir="${host_syslinux_dir:-/usr/lib/syslinux}"
 
 # Default naming configuration.
 OPENXT_BUILD_ID=${OPENXT_BUILD_ID:-"42"}
@@ -24,8 +25,10 @@ usage() {
     echo ""
     echo "Command list:"
     echo "  build:  Build all the images of the OpenXT project using bitbake."
-    echo "  stage:  Build the staging layout from the build outputs."
+    echo "  stage:  Create the staging layout from the build outputs. This is called by \`deploy' automatically."
     echo "  deploy: Deploy OpenXT installer on an installation media."
+    echo "  sync:   Refresh OpenXT installer files on a given installation media."
+    echo "  certs [path]:  Create self-signed certificates in \`${certs_dir}', or link \`${certs_dir}' to existing ones in [path]."
     echo ""
     exit $1
 }
@@ -84,10 +87,14 @@ EOF
 }
 
 
-# Usage: build
+# Usage: build [mode]
 # Build all the images of the OpenXT project using bitbake using the
 # build-manifest file in conf_dir.
+# modes:
+#   clean: Run "cleanall" on the image recipe before building it.
 build() {
+    local mode=$1
+
     while read l ; do
         if [ -z "${l%%#*}" ]; then
             continue
@@ -97,36 +104,15 @@ build() {
         local machine="${entry[0]}"
         local image="${entry[1]}"
 
+        if [ "${mode}" = "clean" ]; then
+            MACHINE="${machine}" bitbake -c cleanall "${image}"
+        fi
         if ! MACHINE="${machine}" bitbake "${image}" ; then
             echo "MACHINE="${machine}" bitbake \"${image}\" failed." >&2
             break
         fi
 
     done < "${conf_dir}/build-manifest"
-}
-
-# Usage: build
-# Re-build all the images of the OpenXT project using bitbake using the
-# build-manifest file in conf_dir.
-rebuild() {
-    while read l ; do
-        if [ -z "${l%%#*}" ]; then
-            continue
-        fi
-
-        local entry=(${l})
-        local machine="${entry[0]}"
-        local image="${entry[1]}"
-
-        if ! MACHINE="${machine}" bitbake -c cleanall "${image}" ; then
-            echo "MACHINE="${machine}" bitbake -c cleanall \"${image}\" failed." >&2
-            break
-        fi
-        if ! MACHINE="${machine}" bitbake "${image}" ; then
-            echo "MACHINE="${machine}" bitbake \"${image}\" failed." >&2
-            break
-        fi
-    done
 }
 
 # Usage: stage_build_output source destination
@@ -348,7 +334,10 @@ stage_iso() {
     local isohdp_src="${machine}/isohdpfx.bin"
     local isohdp_dst="${isolinux_subdir}/isohdpfx.bin"
 
-    stage_build_output "${isohdp_src}" "${isohdp_dst}"
+    # Only post stable-8 with UEFI & xorriso.
+    if [ -e "${isohdp_src}" ]; then
+        stage_build_output "${isohdp_src}" "${isohdp_dst}"
+    fi
 }
 
 # Usage: stage_usb <machine>
@@ -424,6 +413,18 @@ EOF
     stage_build_output "${uc_src_path}" "${uc_dst_path}"
 }
 
+# Usage: stage_usage
+# Display usage for this command wrapper.
+stage_usage() {
+    echo "Stagging command list:"
+    echo "  usb-old: Copy BIOS/USB installer related build results, from Bitbake deployment directory to the staging area."
+    echo "  iso-old: Copy BIOS/ISO installer related build results, from Bitbake deployment directory to the staging area."
+    echo "  usb: Copy EFI/USB installer related build results, from Bitbake deployment directory to the staging area."
+    echo "  iso: Copy EFI/ISO installer related build results, from Bitbake deployment directory to the staging area."
+    echo "  repository: Copy build results from Bitbake deployment directory to the staging area and update the relevant meta-data."
+    exit $1
+}
+
 # Usage: stage <command>
 # Stage commands wrapper.
 stage() {
@@ -432,10 +433,12 @@ stage() {
     case "${target}" in
         "usb-old") stage_usb xenclient-dom0 ;;
         "iso-old") stage_iso xenclient-dom0 ;;
+        "usb") stage_usb openxt-installer ;;
         "iso") stage_iso openxt-installer ;;
         "repository") stage_repository ;;
+        "help") stage_usage 0 ;;
         *)  echo "Unknown staging command \`${target}\'." >&2
-            return 1
+            stage_usage 1
             ;;
     esac
 }
@@ -450,10 +453,10 @@ deploy_iso_legacy() {
 
     # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
     # meta files.
-    stage_repository
+    stage "repository"
     # Prepare ISO image layout.
     # TODO: Amend syslinux files to reflect versions & such
-    stage_iso
+    stage "iso-old"
 
     genisoimage -o "${iso_path}" \
         -b "isolinux/isolinux.bin" -c "isolinux/boot.cat" \
@@ -484,10 +487,10 @@ deploy_iso() {
 
     # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
     # meta files.
-    stage_repository
+    stage "repository"
     # Prepare ISO image layout.
     # TODO: Amend syslinux files to reflect versions & such
-    stage_iso
+    stage "iso"
 
     xorriso -as mkisofs \
         -o "${iso_path}" \
@@ -526,9 +529,9 @@ deploy_usb_legacy() {
 
     # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
     # meta files.
-    stage_repository
+    stage "repository"
     # Prepare USB image layout.
-    stage_usb_legacy
+    stage "usb-old"
 
     echo -n "This will erase ${sd}, are you sure? (y/N)"
     while [ "${reply}" != "y" ]; do
@@ -543,7 +546,6 @@ deploy_usb_legacy() {
         fi
     done
 
-    local host_syslinux_dir="/usr/lib/syslinux/bios"
     local mnt=`mktemp -d`
 
     # Format media.
@@ -556,13 +558,13 @@ deploy_usb_legacy() {
     # Install syslinux.
     sudo syslinux -i "${sd}" -d "syslinux"
     # ... with MBR.
-    sudo dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/mbr.bin" of="${sd%%[0-9]*}"
+    sudo dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/bios/mbr.bin" of="${sd%%[0-9]*}"
     sudo parted "${sd%%[0-9]*}" set 1 boot on
 
     # Deploy syslinux modules.
     sudo mount "${sd}" "${mnt}"
     for bin in mboot.c32 ldlinux.c32 libcom32.c32 ; do
-        sudo cp -v "${host_syslinux_dir}/${bin}" "${mnt}/syslinux"
+        sudo cp -v "${host_syslinux_dir}/bios/${bin}" "${mnt}/syslinux"
     done
 
     # Deploy installation files.
@@ -573,17 +575,97 @@ deploy_usb_legacy() {
     rm -r "${mnt}"
 }
 
+# Usage: deploy_usb </dev/sdX>
+# 1. Run the required staging steps;
+# 2. Format the /dev/sdX device:
+#    - /dev/sdX1: ESP (551M), bootable.
+#    - /dev/sdX2: Storage
+# 3. Deploy syslinux EFI in the ESP.
+# 4. Deploy repository in /dev/sdX2.
+deploy_usb() {
+    local sd="$1"
+    local reply=""
+    local attempts=5
+
+    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
+        return 1
+    fi
+
+    # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
+    # meta files.
+    stage "repository"
+    # Prepare USB image layout.
+    stage "usb"
+
+    echo -n "This will erase ${sd}, are you sure? (y/N)"
+    while [ "${reply}" != "y" ]; do
+        read reply
+        case "${reply}" in
+            ""|"n"|"N") return 0 ;;
+        esac
+        if [ "${attempts}" -lt 0 ]; then
+            echo "" >&2
+            echo "Assuming \`no\'... Bailing out." >&2
+            return 1
+        fi
+    done
+
+    # Create ESP and fillup the rest.
+    # TODO: How nice would it be to have a RW installer image instead of an
+    #       initramfs... Would make debugging it much easier.
+    sudo parted --script ${sd} \
+        mklabel gpt \
+        mkpart ESP fat32 1MiB 551MiB \
+        set 1 esp on \
+        mkpart primary ext4 551MiB 100%
+
+    # parted will not mkfs, this is not intuitive.
+    sudo mkfs -t fat "${sd}1"
+    sudo mkfs -t ext4 "${sd}2"
+
+    local efi_img="${staging_dir}/${isolinux_subdir}/efiboot.img"
+    local mnt=$(mktemp -d)
+    local machine="openxt-installer"
+
+    sudo mount "${sd}1" "${mnt}"
+    sudo mkdir -p "${mnt}/EFI/BOOT"
+    sudo cp "${host_syslinux_dir}/syslinux.efi" "${mnt}/EFI/BOOT/BOOTX64.EFI"
+    for bin in mboot.c32 ldlinux.e64 libcom32.c32 ; do
+        sudo cp -v "${host_syslinux_dir}/${bin}" "${mnt}"/EFI/BOOT
+    done
+    # Deploy installation files.
+    sudo cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
+    sudo umount "${sd}1"
+
+    sudo mount "${sd}2" "${mnt}"
+    sudo cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
+    sudo umount "${sd}2"
+}
+
+# Usage: deploy_usage
+# Display usage for this command wrapper.
+deploy_usage() {
+    echo "Deployment command list:"
+    echo "  usb-old <device-node>: Wipe and partition the device to make a BIOS/MBR bootable Syslinux OpenXT installer."
+    echo "  iso-old: Create a BIOS/MBR bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive)."
+    echo "  usb <devide-node>: Wipe and partition the device to make an EFI bootable Syslinux OpenXT installer."
+    echo "  iso: Create an EFI bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive)."
+    exit $1
+}
+
 # Usage: deploy <command>
 # Deploy OpenXT on the selected installation media.
 deploy() {
     target="$1"
     shift 1
     case "${target}" in
-        "usb-old") deploy_usb $@ ;;
+        "usb-old") deploy_usb_legacy $@ ;;
         "iso-old") deploy_iso_legacy $@ ;;
+        "usb") deploy_usb $@ ;;
         "iso") deploy_iso $@ ;;
+        "help") deploy_usage 0 ;;
         *) echo "Unknown staging command \`${target}\'." >&2
-           return 1
+           deploy_usage 1
            ;;
     esac
 }
@@ -605,7 +687,7 @@ sync_usb_legacy() {
     # Prepare repository & meta files.
     stage_repository
     # Prepare USB image layout.
-    stage_usb_legacy
+    stage_usb xenclient-dom0
     sudo mount "${sd}" "${mnt}"
     # Copy the repositories
     sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
@@ -660,6 +742,7 @@ case "${command}" in
     "stage") stage $@ ;;
     "certs") certs $@ ;;
     "sync") sync $@ ;;
+    "help") usage 0 ;;
     *) echo "Unknown command \`${command}'." >&2
        usage 1
        ;;
