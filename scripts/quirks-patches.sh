@@ -30,11 +30,14 @@ for pq in ${patchqueues[@]}; do
     src="${pq##*:}"
     dst="${pq%%:*}"
 
-    ln -sf -r "${dst}" "${src}/patches"
-    pushd "${src}" >/dev/null
-    quilt push -a >/dev/null 2>&1
-    if [ $? -eq 1 ]; then
-        echo "Failed to apply patch-queue in \`${src}'." >&2
-        exit 1
+    if [ ! -L "${src}/patches" ]; then
+        ln -v -sf -r "${dst}" "${src}/patches"
     fi
+    pushd "${src}" >/dev/null
+        quilt push -a >/dev/null 2>&1
+        if [ $? -eq 1 ]; then
+            echo "Failed to apply patch-queue in \`${src}'." >&2
+            exit 1
+        fi
+    popd
 done
