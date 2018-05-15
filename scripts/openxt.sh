@@ -340,7 +340,7 @@ stage_iso() {
     local isohdp_dst="${isolinux_subdir}/isohdpfx.bin"
 
     # Only post stable-8 with UEFI & xorriso.
-    if [ -e "${isohdp_src}" ]; then
+    if [ -e "${images_dir}/${isohdp_src}" ]; then
         stage_build_output "${isohdp_src}" "${isohdp_dst}"
     fi
 }
