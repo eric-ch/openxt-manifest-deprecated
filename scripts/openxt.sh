@@ -345,79 +345,6 @@ stage_iso() {
     fi
 }
 
-# Usage: stage_usb <machine>
-# Copy images from the deployment directory (deploy_dir) of the installer
-# machine to the usb staging area (staging_dir) that are specific to USB image
-# generation.
-stage_usb() {
-    local machine="$1"
-    local syslinux_subdir="usb/syslinux"
-    # TODO: Well this is ugly.
-    local image_name="xenclient-installer-image-${machine}"
-
-    # --- Write syslinux configuration.
-    mkdir -p "${staging_dir}/${syslinux_subdir}"
-    cat - > "${staging_dir}/${syslinux_subdir}/syslinux.cfg" <<EOF
-SERIAL 0
-DEFAULT openxt
-DISPLAY bootmsg.txt
-PROMPT 1
-TIMEOUT 20
-LABEL openxt
-  kernel mboot.c32
-  append tboot.gz min_ram=0x2000000 loglvl=all serial=115200,8n1,0x3f8 logging=serial,memory --- xen.gz flask=disabled console=com1 dom0_max_vcpus=1 com1=115200,8n1,pci dom0_mem=max:8G ucode=-1 --- vmlinuz quiet root=/dev/ram rw start_install=new eject_cdrom=1 answerfile=/install/answers/default.ans console=hvc0 console=/dev/tty2 selinux=0 --- rootfs.gz --- gm45.acm --- q35.acm --- q45q43.acm --- duali.acm --- quadi.acm --- ivb_snb.acm --- xeon56.acm --- xeone7.acm --- hsw.acm --- bdw.acm --- skl.acm --- kbl.acm --- microcode_intel.bin
-EOF
-    cat - > "${staging_dir}/${syslinux_subdir}/bootmsg.txt" << EOF
-
-OpenXT $OPENXT_VERSION (Build $OPENXT_BUILD_ID)
-
-EOF
-    # --- Stage installer initrd.
-    local initrd_type="cpio.gz"
-    local initrd_src_path="${machine}/${image_name}.${initrd_type}"
-    local initrd_dst_name="rootfs.gz"
-    local initrd_dst_path="${syslinux_subdir}/${initrd_dst_name}"
-
-    stage_build_output "${initrd_src_path}" "${initrd_dst_path}"
-
-    # --- Stage kernel.
-    local kernel_type="bzImage"
-    local kernel_src_path="${machine}/${kernel_type}-${machine}.bin"
-    local kernel_dst_path="${syslinux_subdir}/vmlinuz"
-
-    stage_build_output "${kernel_src_path}" "${kernel_dst_path}"
-
-    # --- Stage hypervisor.
-    local hv_src_path="${machine}/xen.gz"
-    local hv_dst_path="${syslinux_subdir}/xen.gz"
-
-    stage_build_output "${hv_src_path}" "${hv_dst_path}"
-
-    # --- Stage tboot.
-    local tboot_src_path="${machine}/tboot.gz"
-    local tboot_dst_path="${syslinux_subdir}/tboot.gz"
-
-    stage_build_output "${tboot_src_path}" "${tboot_dst_path}"
-
-    # --- Stage ACMs & license.
-    local acms_src_dir="${machine}/"
-    local acms_src_suffix=".acm"
-    local acms_dst_path="${syslinux_subdir}"
-
-    stage_build_output_by_suffix "${acms_src_dir}" "${acms_src_suffix}" "${acms_dst_path}"
-
-    local lic_src_path="${machine}/license-SINIT-ACMs.txt"
-    local lic_dst_path="${syslinux_subdir}/license-SINIT-ACMs.txt"
-
-    stage_build_output "${lic_src_path}" "${lic_dst_path}"
-
-    # --- Stage microcode.
-    local uc_src_path="${machine}/microcode_intel.bin"
-    local uc_dst_path="${syslinux_subdir}/microcode_intel.bin"
-
-    stage_build_output "${uc_src_path}" "${uc_dst_path}"
-}
-
 # Usage: check_cmd_version
 # Compares stage/deploy command against OpenXT version and abort if support is
 # no longer provided.
@@ -430,15 +357,15 @@ check_cmd_version() {
     fi
     if [ "${OPENXT_VERSION%%.*}" -ge "8" ]; then
         case "${cmd}" in
-            "iso-old"|"usb-old")
+            "iso-old")
                 echo "\`${cmd}' is no longer supported with OpenXT 8 and later versions. See \`${cmd%%-old}' command replacement." >&2
                 exit 1 ;;
-            "iso"|"usb") return 0 ;;
+            "iso") return 0 ;;
         esac
     else
         case "${cmd}" in
-            "iso-old"|"usb-old") return 0 ;;
-            "iso"|"usb") echo "\`${cmd}' is not supported with OpenXT 7 and earlier versions. See \`${cmd}-old' legacy support." >&2
+            "iso-old") return 0 ;;
+            "iso") echo "\`${cmd}' is not supported with OpenXT 7 and earlier versions. See \`${cmd}-old' legacy support." >&2
                exit 1 ;;
         esac
     fi
@@ -448,9 +375,7 @@ check_cmd_version() {
 # Display usage for this command wrapper.
 stage_usage() {
     echo "Stagging command list:"
-    echo "  usb-old: Copy BIOS/USB installer related build results, from Bitbake deployment directory to the staging area."
     echo "  iso-old: Copy BIOS/ISO installer related build results, from Bitbake deployment directory to the staging area."
-    echo "  usb: Copy EFI/USB installer related build results, from Bitbake deployment directory to the staging area."
     echo "  iso: Copy EFI/ISO installer related build results, from Bitbake deployment directory to the staging area."
     echo "  repository: Copy build results from Bitbake deployment directory to the staging area and update the relevant meta-data."
     exit $1
@@ -462,12 +387,8 @@ stage() {
     target="$1"
     shift 1
     case "${target}" in
-        "usb-old") check_cmd_version "${target}"
-                   stage_usb xenclient-dom0 ;;
         "iso-old") check_cmd_version "${target}"
                    stage_iso xenclient-dom0 ;;
-        "usb") check_cmd_version "${target}"
-               stage_usb openxt-installer ;;
         "iso") check_cmd_version "${target}"
                stage_iso openxt-installer ;;
         "repository") stage_repository ;;
@@ -549,241 +470,11 @@ deploy_iso() {
         "${staging_dir}/repository"
 }
 
-# Usage: __prepare_installer_legacy </dev/sdX>
-# Need UID 0.
-# Erase, format and prepare /dev/sdX with OpenXT MBR legacy installer:
-#  - Create /dev/sdX1, FAT32 bootable partition;
-#  - Install Syslinux in /dev/sdX1;
-#  - Dump Syslinux MBR on /dev/sdX;
-#  - Install OpenXT installer in /dev/sdX1;
-#  - Install OpenXT installation repository in the repository sub-directory;
-__prepare_installer_legacy() {
-    local device="$1"
-    local partition="${device}1"
-    local mnt=`mktemp -d`
-
-    # Sanity.
-    if [ "$#" -ne "1" ]; then
-        echo "__prepare_installer_legacy() has no device specified." >&2
-        return 1
-    fi
-    if [ "${UID}" -ne "0" ]; then
-        echo "__prepare_installer_legacy() has to be run as root." >&2
-        return 1
-    fi
-
-    set -e
-    # Wipe it all. YOU WERE WARNED.
-    dd bs=512 count=63 if=/dev/zero of="${device}"
-
-    # Partition.
-    parted --script "${device}" \
-        mklabel msdos \
-        mkpart primary fat32 1MiB 100% \
-        set 1 boot on
-
-    # Format media.
-    mkfs -t fat "${partition}"
-
-    # Prepare media layout.
-    mount "${partition}" "${mnt}"
-    mkdir -p "${mnt}/syslinux"
-    umount "${partition}"
-    # Install syslinux.
-    syslinux -i "${partition}" -d "syslinux"
-    # ... with MBR.
-    dd conv=notrunc bs=440 count=1 if="${host_syslinux_dir}/bios/mbr.bin" of="${device}"
-
-    # Deploy syslinux modules.
-    mount "${partition}" "${mnt}"
-    for bin in mboot.c32 ldlinux.c32 libcom32.c32 ; do
-        cp -v "${host_syslinux_dir}/bios/${bin}" "${mnt}/syslinux"
-    done
-
-    # Deploy installation files.
-    cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
-    cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
-
-    umount "${mnt}"
-    rm -r "${mnt}"
-    set +e
-}
-
-# Usage: deploy_usb_legacy </dev/sdX>
-# Run the required staging steps, format /dev/sdX, install the Syslinux MBR on
-# it and OpenXT installer and repository on it.
-deploy_usb_legacy() {
-    local sd="$1"
-    local reply=""
-    local attempts=5
-
-    # Sanity.
-    if [ "$#" -lt 1 ]; then
-        echo "No device provided." >&2
-        return 1
-    fi
-    if [ ! -b "${sd}" ]; then
-        echo "\`${sd}' is not a block device." >&2
-        return 1
-    fi
-
-    # Safeguard.
-    local usb_driver="$(udevadm info --query=all -n ${sd} | sed -ne 's/E: ID_USB_DRIVER=\(.\+\)/\1/p')"
-
-    if [ "${usb_driver}" != "usb-storage" ]; then
-        echo "${sd} is not a storage USB device. Abort." >&2
-        return 1
-    fi
-
-    # Last warning...
-    echo -n "This will erase ${sd}, are you sure? (y/N) "
-    while [ "${reply}" != "y" ]; do
-        read reply
-        case "${reply}" in
-            ""|"n"|"N") return 0 ;;
-        esac
-        if [ "${attempts}" -lt 0 ]; then
-            echo "" >&2
-            echo "Assuming \`no'... Bailing out." >&2
-            return 1
-        fi
-    done
-
-    # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
-    # meta files.
-    stage "repository"
-    # Prepare USB image layout.
-    stage "usb-old"
-    # Deploy.
-    sudo su -c " \
-        staging_dir=${staging_dir}; \
-        host_syslinux_dir=${host_syslinux_dir}; \
-        $(declare -f __prepare_installer_legacy); \
-        __prepare_installer_legacy ${sd} \
-    "
-}
-
-# Usage: __prepare_installer </dev/sdX>
-# Need UID 0.
-# Erase, format and prepare /dev/sdX with OpenXT EFI installer:
-#  - Create /dev/sdX1, ESP bootable FAT32 partition;
-#  - Create /dev/sdX2, storage EXT4 partition;
-#  - Install Syslinux EFI in /dev/sdX1;
-#  - Install OpenXT installer in /dev/sdX1;
-#  - Install OpenXT installation repository in /dev/sdX2;
-__prepare_installer() {
-    local device="$1"
-    local part_esp="${device}1"
-    local part_storage="${device}2"
-    local mnt="$(mktemp -d)"
-
-    # Sanity.
-    if [ "$#" -ne "1" ]; then
-        echo "__prepare_installer() has no device specified." >&2
-        return 1
-    fi
-    if [ "${UID}" -ne "0" ]; then
-        echo "__prepare_installer() has to be run as root." >&2
-        return 1
-    fi
-
-    set -e
-    # Wipe it all. YOU WERE WARNED.
-    dd bs=512 count=63 if=/dev/zero of="${device}"
-
-    # Partition.
-    parted --script "${device}" \
-        mklabel gpt \
-        mkpart ESP fat32 1MiB 551MiB \
-        set 1 esp on \
-        mkpart primary ext4 551MiB 100%
-
-    # Format media.
-    # parted will not mkfs, this is not intuitive.
-    mkfs -t fat "${part_esp}"
-    mkfs -t ext4 "${part_storage}"
-
-    # Install Syslinux EFI.
-    mount "${part_esp}" "${mnt}"
-    mkdir -p "${mnt}/EFI/BOOT"
-    cp "${host_syslinux_dir}/efi64/syslinux.efi" "${mnt}/EFI/BOOT/BOOTX64.EFI"
-    for bin in mboot.c32 ldlinux.e64 libcom32.c32 ; do
-        cp -v "${host_syslinux_dir}/efi64/${bin}" "${mnt}"/EFI/BOOT
-    done
-    # Deploy installer files.
-    cp -rv "${staging_dir}/usb/syslinux" "${mnt}/"
-    umount "${part_esp}"
-    # Deploy repository files.
-    mount "${part_storage}" "${mnt}"
-    cp -rv "${staging_dir}/repository/packages.main" "${mnt}/"
-    umount "${part_storage}"
-
-    rm -r "${mnt}"
-    set +e
-}
-
-# Usage: deploy_usb </dev/sdX>
-# Run the required staging steps, format the /dev/sdXN partition, install the
-# syslinux mbr on the device (/dev/sdX), install syslinux on it, then deploy
-# the installer and installation required files on the newly created partition.
-deploy_usb() {
-    local sd="$1"
-    local reply=""
-    local attempts=5
-
-    # Sanity.
-    if [ "$#" -lt 1 ]; then
-        echo "No device provided." >&2
-        return 1
-    fi
-    if [ ! -b "${sd}" ]; then
-        echo "\`${sd}' is not a block device." >&2
-        return 1
-    fi
-
-    # Safeguard.
-    local usb_driver="$(udevadm info --query=all -n ${sd} | sed -ne 's/E: ID_USB_DRIVER=\(.\+\)/\1/p')"
-
-    if [ "${usb_driver}" != "usb-storage" ]; then
-        echo "${sd} is not a storage USB device. Abort." >&2
-        return 1
-    fi
-
-    # Last warning...
-    echo -n "This will erase ${sd}, are you sure? (y/N) "
-    while [ "${reply}" != "y" ]; do
-        read reply
-        case "${reply}" in
-            ""|"n"|"N") return 0 ;;
-        esac
-        if [ "${attempts}" -lt 0 ]; then
-            echo "" >&2
-            echo "Assuming \`no'... Bailing out." >&2
-            return 1
-        fi
-    done
-
-    # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
-    # meta files.
-    stage "repository"
-    # Prepare USB image layout.
-    stage "usb"
-    # Deploy.
-    sudo su -c " \
-        staging_dir=${staging_dir}; \
-        host_syslinux_dir=${host_syslinux_dir}; \
-        $(declare -f __prepare_installer); \
-        __prepare_installer ${sd} \
-    "
-}
-
 # Usage: deploy_usage
 # Display usage for this command wrapper.
 deploy_usage() {
     echo "Deployment command list:"
-    echo "  usb-old <device-node>: Wipe and partition the device to make a BIOS/MBR bootable Syslinux OpenXT installer. This installer is available until OpenXT 7."
     echo "  iso-old: Create a BIOS/MBR bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive). This installeris available until OpenXT 7."
-    echo "  usb <devide-node>: Wipe and partition the device to make an EFI bootable Syslinux OpenXT installer. This installer is available starting with OpenXT 8."
     echo "  iso: Create an EFI bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive). This installer is available starting with OpenXT 8."
     exit $1
 }
@@ -795,12 +486,8 @@ deploy() {
     shift 1
 
     case "${target}" in
-        "usb-old") check_cmd_version ${target}
-                   deploy_usb_legacy $@ ;;
         "iso-old") check_cmd_version "${target}"
                    deploy_iso_legacy $@ ;;
-        "usb") check_cmd_version "${target}"
-               deploy_usb $@ ;;
         "iso") check_cmd_version "${target}"
                deploy_iso $@ ;;
         "help") deploy_usage 0 ;;
@@ -811,42 +498,12 @@ deploy() {
 }
 
 
-# Usage: sync_usb_legacy </dev/sdXN>.
-# Copy the staged file in the USB installer partition.
-# This does no install the syslinux mbr or the syslinux bootloader files.
-sync_usb_legacy() {
-    local sd="$1"
-    local mnt=`mktemp -d`
-
-    if [ "$#" -ne 1 -o ! -b "${sd}" ]; then
-        return 1
-    fi
-
-    set -e
-
-    # Prepare repository & meta files.
-    stage_repository
-    # Prepare USB image layout.
-    stage_usb xenclient-dom0
-    sudo mount "${sd}" "${mnt}"
-    # Copy the repositories
-    sudo cp -ruv -T "${staging_dir}/repository/packages.main" "${mnt}/packages.main"
-    # Copy the acms, installer hypervisor, kernel and initrd.
-    sudo cp -ruv -T "${staging_dir}/usb/syslinux" "${mnt}/syslinux"
-    sudo umount "${mnt}"
-
-    set +e
-
-    rm -r "${mnt}"
-}
-
 # Usage: sync <command> [args]
 # Synchronize install media with what is new in the staging.
 sync() {
     target=$1
     shift 1
     case "${target}" in
-        "usb-old") sync_usb_legacy $@ ;;
         *) echo "Unknown sync command \`${target}'." >&2
            return 1
            ;;
