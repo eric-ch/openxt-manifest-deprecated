@@ -645,7 +645,7 @@ sync() {
 while getopts ":h" opt; do
     case $opt in
         h)  usage 0 ;;
-        :)  echo "Options \`${OPTARG}' is missing an argument." >&2
+        :)  echo "Option \`${OPTARG}' is missing an argument." >&2
             usage 1
             ;;
         \?) echo "Unknown option \`${OPTARG}'." >&2
