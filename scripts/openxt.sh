@@ -345,6 +345,66 @@ stage_iso() {
     fi
 }
 
+# Usage: stage_pxe <machine>
+# Copy images from the deployment directory (deploy_dir) of the installer
+# machine to the pxe staging area (staging_dir).
+stage_pxe() {
+    local machine="$1"
+    local pxe_subdir="pxe"
+    # TODO: Well this is ugly.
+    local image_name="xenclient-installer-image-${machine}"
+
+    # --- Stage installer bulk files.
+    local pxe_src_path="${machine}/${image_name}/netboot/"
+    local pxe_src_suffix=".ans"
+    stage_build_output_by_suffix "${pxe_src_path}" "${pxe_src_suffix}" "${pxe_subdir}"
+
+    # --- Stage installer initrd.
+    local initrd_type="cpio.gz"
+    local initrd_src_path="${machine}/${image_name}.${initrd_type}"
+    local initrd_dst_name="rootfs.gz"
+    local initrd_dst_path="${pxe_subdir}/${initrd_dst_name}"
+
+    stage_build_output "${initrd_src_path}" "${initrd_dst_path}"
+
+    # --- Stage kernel.
+    local kernel_type="bzImage"
+    local kernel_src_path="${machine}/${kernel_type}-${machine}.bin"
+    local kernel_dst_path="${pxe_subdir}/vmlinuz"
+
+    stage_build_output "${kernel_src_path}" "${kernel_dst_path}"
+
+    # --- Stage hypervisor.
+    local hv_src_path="${machine}/xen.gz"
+    local hv_dst_path="${pxe_subdir}/xen.gz"
+
+    stage_build_output "${hv_src_path}" "${hv_dst_path}"
+
+    # --- Stage tboot.
+    local tboot_src_path="${machine}/tboot.gz"
+    local tboot_dst_path="${pxe_subdir}/tboot.gz"
+
+    stage_build_output "${tboot_src_path}" "${tboot_dst_path}"
+
+    # --- Stage ACMs & license.
+    local acms_src_dir="${machine}/"
+    local acms_src_suffix=".acm"
+    local acms_dst_path="${pxe_subdir}"
+
+    stage_build_output_by_suffix "${acms_src_dir}" "${acms_src_suffix}" "${acms_dst_path}"
+
+    local lic_src_path="${machine}/license-SINIT-ACMs.txt"
+    local lic_dst_path="${pxe_subdir}/license-SINIT-ACMs.txt"
+
+    stage_build_output "${lic_src_path}" "${lic_dst_path}"
+
+    # --- Stage microcode.
+    local uc_src_path="${machine}/microcode_intel.bin"
+    local uc_dst_path="${pxe_subdir}/microcode_intel.bin"
+
+    stage_build_output "${uc_src_path}" "${uc_dst_path}"
+}
+
 # Usage: check_cmd_version
 # Compares stage/deploy command against OpenXT version and abort if support is
 # no longer provided.
@@ -357,15 +417,15 @@ check_cmd_version() {
     fi
     if [ "${OPENXT_VERSION%%.*}" -ge "8" ]; then
         case "${cmd}" in
-            "iso-old")
+            *"-old")
                 echo "\`${cmd}' is no longer supported with OpenXT 8 and later versions. See \`${cmd%%-old}' command replacement." >&2
                 exit 1 ;;
-            "iso") return 0 ;;
+            *) return 0 ;;
         esac
     else
         case "${cmd}" in
-            "iso-old") return 0 ;;
-            "iso") echo "\`${cmd}' is not supported with OpenXT 7 and earlier versions. See \`${cmd}-old' legacy support." >&2
+            *"-old") return 0 ;;
+            "*") echo "\`${cmd}' is not supported with OpenXT 7 and earlier versions. See \`${cmd}-old' legacy support." >&2
                exit 1 ;;
         esac
     fi
@@ -377,6 +437,8 @@ stage_usage() {
     echo "Stagging command list:"
     echo "  iso-old: Copy BIOS/ISO installer related build results, from Bitbake deployment directory to the staging area."
     echo "  iso: Copy EFI/ISO installer related build results, from Bitbake deployment directory to the staging area."
+    echo "  pxe-old: Copy PXE files for the installer from Bitbake deployment directory to the staging area."
+    echo "  pxe: Copy PXE files for the installer from Bitbake deployment directory to the staging area."
     echo "  repository: Copy build results from Bitbake deployment directory to the staging area and update the relevant meta-data."
     exit $1
 }
@@ -391,6 +453,10 @@ stage() {
                    stage_iso xenclient-dom0 ;;
         "iso") check_cmd_version "${target}"
                stage_iso openxt-installer ;;
+        "pxe-old") check_cmd_version "${target}"
+                   stage_pxe xenclient-dom0 ;;
+        "pxe") check_cmd_version "${target}"
+               stage_pxe openxt-installer ;;
         "repository") stage_repository ;;
         "help") stage_usage 0 ;;
         *)  echo "Unknown staging command \`${target}'." >&2
@@ -470,12 +536,74 @@ deploy_iso() {
         "${staging_dir}/repository"
 }
 
+deploy_pxe_usage() {
+    local rc="$1"
+    echo "Usage: ./openxt.sh deploy pxe [-r [<repo-user>@]<repo-server>:<repo-path>] [<tftp-user>@]<tftp-server>:<tftp-path> <repository-uri>"
+    echo "  -r  rsync repository files to http(s) server passed as argument, [<repo-user>@]<repo-server>:<repo-path>."
+    exit "${rc}"
+}
+
+__deploy_pxe() {
+    local pxe_staging="${staging_dir}/pxe"
+    local repo_dst=""
+
+    # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
+    # meta files.
+    stage "repository"
+
+    while getopts "hr:" opt; do
+        case "${opt}" in
+            h) deploy_pxe_usage 0 ;;
+            :) echo "Option \`${OPTARG}' is missing an argument." >&2
+               deploy_pxe_usage 1 ;;
+            \?) echo "Unknown option \`${OPTARG}'." >&2
+                deploy_pxe_usage 1 ;;
+            r) repo_dst="${OPTARG}" ;;
+        esac
+    done
+    shift $((${OPTIND} - 1))
+
+    if [ "$#" -ne 2 ]; then
+        deploy_pxe_usage 1
+    fi
+
+    local tftp_dst="$1"
+    local repo_url="$2"
+
+    # TODO: Not great, will change staging data...
+    #       Not too bad since we "stage pxe" again every time.
+    local answer_files=()
+    for ans in "${pxe_staging}"/*.ans; do
+        sed -i "s|@NETBOOT_URL@|${repo_url}|" "${ans}"
+        answer_files+=("${ans}")
+    done
+    rsync -avzr "${pxe_staging}/" "${tftp_dst}"
+    if [ -n "${repo_dst}" ]; then
+        echo rsync -avzr "${staging_dir}/repository/" ${answer_files[@]} "${repo_dst}"
+        rsync -avzr "${staging_dir}/repository/" ${answer_files[@]} "${repo_dst}"
+    fi
+}
+deploy_pxe_legacy() {
+    # Prepare PXE staging.
+    stage "pxe-old"
+
+    __deploy_pxe $@
+}
+deploy_pxe() {
+    # Prepare PXE staging.
+    stage "pxe"
+
+    __deploy_pxe $@
+}
+
 # Usage: deploy_usage
 # Display usage for this command wrapper.
 deploy_usage() {
     echo "Deployment command list:"
     echo "  iso-old: Create a BIOS/MBR bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive). This installeris available until OpenXT 7."
     echo "  iso: Create an EFI bootable ISO hybrid image of an OpenXT installer (can be dd'ed on a thumbdrive). This installer is available starting with OpenXT 8."
+    echo "  pxe-old: Copy a PXE compatible OpenXT installer to the given [<tftp-user>@]<tftp-server>:<tftp-path> tftp server, and setup the installer to fetch repository from <repo-uri>."
+    echo "  pxe: Copy a PXE compatible OpenXT installer to the given [<tftp-user>@]<tftp-server>:<tftp-path> tftp server, and setup the installer to fetch repository from <repo-uri>."
     exit $1
 }
 
@@ -490,6 +618,8 @@ deploy() {
                    deploy_iso_legacy $@ ;;
         "iso") check_cmd_version "${target}"
                deploy_iso $@ ;;
+        "pxe-old") deploy_pxe_legacy $@ ;;
+        "pxe") deploy_pxe $@ ;;
         "help") deploy_usage 0 ;;
         *) echo "Unknown staging command \`${target}'." >&2
            deploy_usage 1
