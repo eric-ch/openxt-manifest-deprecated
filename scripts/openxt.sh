@@ -101,7 +101,7 @@ build() {
     local mode=$1
 
     # Overwrite the build timestamp.
-    echo "OPENXT_BUILD_DATE=\"$(date '+%T %D')\"" > ${conf_dir}/openxt-build-date.inc
+    echo "OPENXT_BUILD_DATE=\"$(date '+%T %D')\"" > ${conf_dir}/openxt-build-date.conf
     while read l ; do
         if [ -z "${l%%#*}" ]; then
             continue
