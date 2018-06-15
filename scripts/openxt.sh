@@ -151,7 +151,7 @@ stage_build_output_by_suffix() {
             echo "${f} is not ready yet." >&2
             break
         fi
-        cp -ruv -L "${f}" "${dst}"
+        cp -ruv -L "${f}" "${dst}/`basename ${f}`"
     done
 }
 
