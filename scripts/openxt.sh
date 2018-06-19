@@ -177,6 +177,7 @@ release:${OPENXT_RELEASE}
 upgrade-from:${OPENXT_UPGRADEABLE_RELEASES}
 packages:${xc_package_sha256}
 EOF
+        yes ""
     } | head -c $((1024 * 1024)) > "${repository_dir}/XC-REPOSITORY"
     set -o pipefail
 
