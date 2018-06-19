@@ -171,6 +171,7 @@ sign_repository() {
         cat <<EOF
 xc:main
 pack:Base Pack
+product:OpenXT
 build:${OPENXT_BUILD_ID}
 version:${OPENXT_VERSION}
 release:${OPENXT_RELEASE}
