@@ -578,7 +578,7 @@ __deploy_pxe() {
     #       Not too bad since we "stage pxe" again every time.
     local answer_files=()
     for ans in "${pxe_staging}"/*.ans; do
-        sed -i "s|@NETBOOT_URL@|${repo_url}|" "${ans}"
+        sed -i "s|\(<source.\+>\).\+</source>|\1${repo_url}</source>|" "${ans}"
         answer_files+=("${ans}")
     done
     rsync -avzr "${pxe_staging}/" "${tftp_dst}"
