@@ -21,7 +21,7 @@
 
   <project remote="yocto" name="meta-intel" revision="9b37952d6af36358b6397cedf3dd53ec8962b6bf" path="layers/meta-intel"/>
   <project remote="yocto" name="meta-java" revision="0c27b120aa508e4bb41394b8dd3645949a611128" path="layers/meta-java"/>
-  <project remote="yocto" name="meta-selinux" revision="d855c624f32c5e599bf27e06cb8f5b25b3aae12d" path="layers/meta-selinux"/>
+  <project remote="yocto" name="meta-selinux" revision="b1dac7e2b26f869c991c6492aa7fa18eaa4b47f6" path="layers/meta-selinux"/>
   <project remote="yocto" name="meta-virtualization" revision="45ad257a1e4a6707c376d2f7eb26c3c8bdf03607" path="layers/meta-virtualization"/>
 
   <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe"/>
