@@ -221,7 +221,7 @@ stage_repository_entry() {
     esac
 
     if [ -f "${repository_dir}/XC-PACKAGES" ] && grep -q "^${id} " "${repository_dir}/XC-PACKAGES" ; then
-        sed -i -e "s#^${id}.\+#${id} ${size} ${sha256} ${format} required ${dst} ${mnt}#" "${repository_dir}/XC-PACKAGES"
+        sed -i -e "s%^${id}.\+%${id} ${size} ${sha256} ${format} required ${dst} ${mnt}%" "${repository_dir}/XC-PACKAGES"
     else
         echo "${id} ${size} ${sha256} ${format} required ${dst} ${mnt}" >> "${repository_dir}/XC-PACKAGES"
     fi
