@@ -21,6 +21,21 @@ OPENXT_VERSION=${OPENXT_VERSION:-"0.0.0"}
 OPENXT_RELEASE=${OPENXT_RELEASE:-"none"}
 OPENXT_UPGRADEABLE_RELEASES=${OPENXT_UPGRADEABLE_RELEASES:-"0.0.0"}
 
+# Usage: command_sane <command> <package>
+# Verify that command exists in the current environment (builtin, alias or
+# executable) or display an error message with the recommended package
+# providing it on stderr and return 1.
+command_sane() {
+    local cmd="$1"
+    local pkg="$2"
+
+    if ! command -v "$1" >/dev/null; then
+        echo "Cannot find \"${cmd}\" command. Install ${pkg} to use this script." >&2
+        return 1
+    fi
+    return 0
+}
+
 # Usage: usage <exit-code>
 # Display the usage of this script.
 usage() {
@@ -264,11 +279,17 @@ stage_iso() {
     local isolinux_subdir="iso/isolinux"
     # TODO: Well this is ugly.
     local image_name="xenclient-installer-image-${machine}"
-
-    # --- Stage installer bulk files.
     local iso_src_path="${machine}/${image_name}/iso"
 
+    if ! command_sane "/sbin/mkfs" "util-linux" ||
+       ! command_sane "mmd" "mtools" ||
+       ! command_sane "mcopy" "mtools"; then
+        return 1
+    fi
+
+    # --- Stage installer bulk files.
     stage_build_output "${iso_src_path}" "${isolinux_subdir}"
+
     # --- Ammend isolinux configuration for that image.
     # Changing the staging is fine as it will be overwritten for every
     # "stage_iso" command.
@@ -510,6 +531,11 @@ deploy_iso() {
     # TODO: This could be defined from configuration.
     local iso_name="openxt-installer.iso"
     local iso_path="${deploy_dir}/${iso_name}"
+    local sys_sanity=0
+
+    if ! command_sane "xorriso" "libisoburn"; then
+        return 1
+    fi
 
     # Prepare repository layout and write XC-{PACKAGE,REPOSITORY,SIGNATURE}
     # meta files.
