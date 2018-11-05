@@ -66,8 +66,8 @@ certs() {
         mkdir -p "${certs_dir}" &&
         openssl genrsa -out ${certs_dir}/prod-cakey.pem 2048 &&
         openssl genrsa -out ${certs_dir}/dev-cakey.pem 2048 &&
-        openssl req -new -x509 -key ${certds_dir}/prod-cakey.pem -out ${certs_dir}/prod-cacert.pem -days 1095 &&
-        openssl req -new -x509 -key ${certds_dir}/dev-cakey.pem -out ${certs_dir}/dev-cacert.pem -days 1095 ||
+        openssl req -new -x509 -key ${certs_dir}/prod-cakey.pem -out ${certs_dir}/prod-cacert.pem -days 1095 &&
+        openssl req -new -x509 -key ${certs_dir}/dev-cakey.pem -out ${certs_dir}/dev-cacert.pem -days 1095 ||
             return 1
     else
         # Certificates are already setup for this tree.
