@@ -7,16 +7,16 @@ in one's work-flow.
 
 ## Usual workflow
 
-mkdir master
-pushd master
-repo init -u https://github.com/eric-ch/openxt-manifest
-repo sync
-repo start --all master
-./scripts/quirks-patches.sh
-./scripts/openxt.sh certs
-[...]
-./scripts/openxt.sh build
-./scripts/openxt.sh deploy iso
+* mkdir master
+* pushd master
+* repo init -u https://github.com/eric-ch/openxt-manifest
+* repo sync
+* repo start --all master
+* ./scripts/quirks-patches.sh
+* ./scripts/openxt.sh certs
+* [...]
+* ./scripts/openxt.sh build
+* ./scripts/openxt.sh deploy iso
 
 ## Manifests
 
