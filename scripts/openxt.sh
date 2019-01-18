@@ -159,7 +159,7 @@ stage_build_output() {
 stage_build_output_by_suffix() {
     local dst="${staging_dir}/$3"
 
-    mkdir -p `dirname ${dst}`
+    mkdir -p "${dst}"
 
     for f in "${images_dir}/${1}"*"${2}"; do
         if [ ! -e "${f}" ]; then
