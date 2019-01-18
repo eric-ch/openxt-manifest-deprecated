@@ -607,9 +607,9 @@ __deploy_pxe() {
         sed -i "s|\(<source.\+>\).\+</source>|\1${repo_url}</source>|" "${ans}"
         answer_files+=("${ans}")
     done
-    rsync -avzr "${pxe_staging}/" "${tftp_dst}"
+    rsync -rlptDvzr "${pxe_staging}/" "${tftp_dst}"
     if [ -n "${repo_dst}" ]; then
-        echo rsync -avzr "${staging_dir}/repository/" ${answer_files[@]} "${repo_dst}"
+        echo rsync -rlptDvzr "${staging_dir}/repository/" ${answer_files[@]} "${repo_dst}"
         rsync -avzr "${staging_dir}/repository/" ${answer_files[@]} "${repo_dst}"
     fi
 }
