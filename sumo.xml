@@ -11,11 +11,11 @@
   <project remote="github" name="openembedded/bitbake" revision="1.38" path="bitbake">
       <copyfile dest="setup-env" src="../.repo/manifests/setup-env"/>
       <linkfile dest="scripts" src="../.repo/manifests/scripts"/>
-      <linkfile dest="sumo-conf/bblayers.conf" src="../.repo/manifests/conf/bblayers.conf"/>
-      <linkfile dest="sumo-conf/local.conf" src="../.repo/manifests/conf/local.conf"/>
-      <linkfile dest="sumo-conf/images-manifest" src="../.repo/manifests/conf/images-manifest"/>
-      <linkfile dest="sumo-conf/build-manifest" src="../.repo/manifests/conf/build-manifest"/>
-      <linkfile dest="sumo-conf/openxt.conf" src="../.repo/manifests/conf/openxt.conf"/>
+      <linkfile dest="conf/bblayers.conf" src="../.repo/manifests/sumo-conf/bblayers.conf"/>
+      <linkfile dest="conf/local.conf" src="../.repo/manifests/sumo-conf/local.conf"/>
+      <linkfile dest="conf/images-manifest" src="../.repo/manifests/sumo-conf/images-manifest"/>
+      <linkfile dest="conf/build-manifest" src="../.repo/manifests/sumo-conf/build-manifest"/>
+      <linkfile dest="conf/openxt.conf" src="../.repo/manifests/sumo-conf/openxt.conf"/>
   </project>
   <project remote="github" name="openembedded/openembedded-core" revision="sumo" path="layers/openembedded-core"/>
   <project remote="github" name="openembedded/meta-openembedded" revision="sumo" path="layers/meta-openembedded"/>
@@ -25,9 +25,9 @@
   <project remote="yocto" name="meta-selinux" revision="master" path="layers/meta-selinux"/>
   <project remote="yocto" name="meta-virtualization" revision="sumo" path="layers/meta-virtualization"/>
 
-  <project remote="ericch" name="xenclient-oe" path="layers/xenclient-oe"/>
-  <project remote="ericch" name="meta-openxt-ocaml-platform" path="layers/meta-openxt-ocaml-platform"/>
-  <project remote="ericch" name="meta-openxt-haskell-platform" path="layers/meta-openxt-haskell-platform"/>
+  <project remote="ericch" name="xenclient-oe" revision="sumo" path="layers/xenclient-oe"/>
+  <project remote="ericch" name="meta-openxt-ocaml-platform" revision="sumo" path="layers/meta-openxt-ocaml-platform"/>
+  <project remote="ericch" name="meta-openxt-haskell-platform" revision="sumo" path="layers/meta-openxt-haskell-platform"/>
 
   <project remote="github" name="openxt/dm-agent" path="openxt/dm-agent"/>
   <project remote="github" name="openxt/fbtap" path="openxt/fbtap"/>
