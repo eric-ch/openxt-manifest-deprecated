@@ -21,7 +21,7 @@
 
   <project remote="yocto" name="meta-intel" revision="pyro" path="layers/meta-intel"/>
   <project remote="yocto" name="meta-java" revision="pyro" path="layers/meta-java"/>
-  <project remote="yocto" name="meta-selinux" revision="master" path="layers/meta-selinux"/>
+  <project remote="yocto" name="meta-selinux" revision="b1dac7e2b26f869c991c6492aa7fa18eaa4b47f6" path="layers/meta-selinux"/>
   <project remote="yocto" name="meta-virtualization" revision="pyro" path="layers/meta-virtualization"/>
 
   <project remote="github" name="openxt/xenclient-oe" path="layers/xenclient-oe"/>
